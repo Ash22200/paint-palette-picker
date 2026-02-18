@@ -1,296 +1,265 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Paint Palette Picker</title>
+<title>Miniature Paint Matcher</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-body {
-  background: radial-gradient(circle at top, #1e293b 0%, #0f172a 60%, #000 100%);
-  color:white;
-}
-.marker {
-  width:22px;
-  height:22px;
-  border:4px solid white;
-  border-radius:50%;
-  position:absolute;
-  transform:translate(-50%, -50%);
-  cursor:pointer;
-  box-shadow:0 0 12px rgba(0,0,0,0.6);
-}
-.marker:hover { transform:translate(-50%, -50%) scale(1.2); }
+*{font-family:'Outfit',sans-serif}
+.gradient-bg{background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#3730a3 100%)}
+.glass-card{background:rgba(255,255,255,.95);backdrop-filter:blur(10px)}
+.paint-swatch:hover{transform:scale(1.05);transition:.2s}
+.upload-zone{border:2px dashed #6366f1}
+.color-marker{cursor:grab;position:absolute;width:30px;height:30px;border-radius:999px;border:3px solid white;box-shadow:0 5px 15px rgba(0,0,0,.3)}
+.color-marker:active{cursor:grabbing}
 </style>
 </head>
-<body class="p-8">
 
-<header class="text-center mb-16">
-  <h1 class="text-6xl font-extrabold bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
-    Paint Palette Picker
-  </h1>
-  <p class="text-slate-300 mt-4 text-lg">
-    Extract intelligent miniature paint matches from any image.
-  </p>
+<body class="gradient-bg min-h-screen p-6">
+
+<div class="max-w-7xl mx-auto">
+
+<header class="flex justify-between items-center mb-6">
+<h1 class="text-3xl font-bold text-white">Paint Matcher</h1>
+<div class="flex gap-2 bg-white/10 p-1 rounded-xl">
+<button onclick="switchView('matcher')" id="tab-matcher" class="px-5 py-2 rounded-lg bg-indigo-600 text-white">🎨 Color Matcher</button>
+<button onclick="switchView('inventory')" id="tab-inventory" class="px-5 py-2 rounded-lg text-white/70 hover:bg-white/10">📦 My Inventory</button>
+</div>
 </header>
 
-<div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12">
+<!-- MATCHER -->
+<div id="view-matcher" class="flex gap-6">
 
-  <!-- IMAGE SIDE -->
-  <div>
-    <input type="file" id="imageInput" accept="image/*"
-      class="mb-6 block">
+<div class="flex-1 glass-card rounded-2xl p-6 relative">
+<div id="upload-zone" class="upload-zone rounded-xl flex items-center justify-center h-96 cursor-pointer">
+<label class="cursor-pointer text-center">
+<p class="text-lg font-medium text-indigo-600">Upload reference image</p>
+<input type="file" id="image-upload" accept="image/*" hidden>
+</label>
+</div>
 
-    <div class="relative border border-slate-700 rounded-2xl overflow-hidden shadow-2xl bg-black">
-      <img id="modelImg" class="w-full select-none">
-      <div id="markerLayer" class="absolute inset-0"></div>
-    </div>
+<div id="image-container" class="hidden relative h-96 rounded-xl overflow-hidden">
+<canvas id="image-canvas" class="absolute inset-0"></canvas>
+<div id="markers-container" class="absolute inset-0"></div>
+<button onclick="addMarker()" class="absolute bottom-4 left-4 bg-indigo-600 text-white px-4 py-2 rounded-lg shadow">Add Color</button>
+<button onclick="clearImage()" class="absolute bottom-4 right-4 bg-white px-4 py-2 rounded-lg shadow">Change</button>
+</div>
+</div>
 
-    <div class="mt-4 flex gap-4">
-      <button onclick="autoExtract()"
-        class="px-5 py-3 rounded-xl bg-pink-600 hover:bg-pink-500">
-        Auto Extract
-      </button>
+<div class="w-96 glass-card rounded-2xl p-6 overflow-y-auto">
+<h2 class="text-lg font-semibold mb-4">Color Matches</h2>
+<div id="color-matches" class="space-y-4 text-gray-400 text-center">
+No colors selected
+</div>
+</div>
 
-      <label class="flex items-center gap-2 text-sm">
-        <input type="checkbox" id="ownedOnly">
-        Only Owned
-      </label>
-    </div>
-  </div>
+</div>
 
-  <!-- RESULTS SIDE -->
-  <div>
+<!-- INVENTORY -->
+<div id="view-inventory" class="hidden glass-card rounded-2xl p-6">
+<h2 class="text-lg font-semibold mb-4">My Paint Collection</h2>
 
-    <h2 class="text-2xl mb-4">Extracted Palette</h2>
-    <div id="paletteGrid" class="grid grid-cols-2 gap-4 mb-10"></div>
+<div class="grid grid-cols-6 gap-3" id="inventory-grid"></div>
 
-    <h2 class="text-2xl mb-4">Closest Matches</h2>
-    <div id="matchesList" class="space-y-4"></div>
-
-  </div>
+<div class="mt-6 flex gap-3 items-end">
+<select id="new-brand" class="border px-3 py-2 rounded-lg">
+<option value="citadel">Citadel</option>
+<option value="vallejo">Vallejo</option>
+<option value="army_painter">Army Painter</option>
+<option value="pro_acryl">Pro Acryl</option>
+</select>
+<input id="new-name" placeholder="Paint name" class="border px-3 py-2 rounded-lg flex-1">
+<input type="color" id="new-color" value="#ff0000" class="h-10 w-16">
+<button onclick="addPaint()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">Add</button>
+</div>
+</div>
 
 </div>
 
 <script>
 
-// =============================
-// Paint Database
-// =============================
+// ==================== DATABASE ====================
 
-const paints = [
-  {id:"cit_abaddon", brand:"Citadel", name:"Abaddon Black", hex:"#231F20"},
-  {id:"cit_mephiston", brand:"Citadel", name:"Mephiston Red", hex:"#9A1115"},
-  {id:"cit_naggaroth", brand:"Citadel", name:"Naggaroth Night", hex:"#3D3354"},
-  {id:"ap_warlock", brand:"Army Painter", name:"Warlock Purple", hex:"#5A2A56"},
-  {id:"ap_uniform", brand:"Army Painter", name:"Uniform Grey", hex:"#5E6366"},
-  {id:"pro_blue", brand:"Pro Acryl", name:"Blue", hex:"#2F5DA8"},
-  {id:"val_black", brand:"Vallejo", name:"Black", hex:"#1C1C1C"},
-  {id:"val_white", brand:"Vallejo", name:"White", hex:"#F5F5F5"}
-];
+const PAINT_DATABASE = {
+citadel:[{name:"Mephiston Red",hex:"#9a1115"},{name:"Abaddon Black",hex:"#231f20"}],
+vallejo:[{name:"Scarlet Red",hex:"#bc140c"}],
+army_painter:[{name:"Dragon Red",hex:"#be1b10"}],
+pro_acryl:[{name:"Bold Titanium White",hex:"#ffffff"}]
+};
 
-// =============================
-// Owned System
-// =============================
+// ==================== INVENTORY ====================
 
-let owned = new Set(JSON.parse(localStorage.getItem("owned")||"[]"));
-function toggleOwned(id){
-  if(owned.has(id)) owned.delete(id);
-  else owned.add(id);
-  localStorage.setItem("owned",JSON.stringify([...owned]));
+const STORAGE_KEY="paint_inventory_v1";
+let inventory=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
+
+function saveInventory(){localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}
+
+function renderInventory(){
+const grid=document.getElementById("inventory-grid");
+if(!inventory.length){grid.innerHTML="<p class='text-gray-400 col-span-6'>No paints yet</p>";return;}
+grid.innerHTML=inventory.map(p=>`
+<div class="paint-swatch bg-white p-3 rounded-xl shadow text-center">
+<div class="aspect-square rounded mb-2" style="background:${p.hex}"></div>
+<p class="text-sm font-medium">${p.name}</p>
+</div>`).join("");
 }
 
-// =============================
-// Image Handling
-// =============================
-
-const imageInput = document.getElementById("imageInput");
-const modelImg = document.getElementById("modelImg");
-const markerLayer = document.getElementById("markerLayer");
-
-let palette = [];
-
-imageInput.addEventListener("change", e=>{
-  const reader=new FileReader();
-  reader.onload=()=> modelImg.src=reader.result;
-  reader.readAsDataURL(e.target.files[0]);
-});
-
-modelImg.onload=()=> initializeMarkers(5);
-
-// =============================
-// Markers
-// =============================
-
-function initializeMarkers(count){
-  markerLayer.innerHTML="";
-  palette=[];
-  for(let i=0;i<count;i++){
-    const m=document.createElement("div");
-    m.className="marker";
-    m.style.left=(20+i*15)+"%";
-    m.style.top=(30+i*10)+"%";
-    markerLayer.appendChild(m);
-    enableDrag(m);
-    sampleColor(m);
-  }
+function addPaint(){
+const name=document.getElementById("new-name").value;
+const brand=document.getElementById("new-brand").value;
+const hex=document.getElementById("new-color").value;
+if(!name)return;
+inventory.push({name,brand,hex});
+saveInventory();
+renderInventory();
+document.getElementById("new-name").value="";
 }
 
-function enableDrag(marker){
-  marker.addEventListener("pointerdown", e=>{
-    marker.setPointerCapture(e.pointerId);
-    marker.onpointermove=ev=>{
-      const rect=modelImg.getBoundingClientRect();
-      let x=ev.clientX-rect.left;
-      let y=ev.clientY-rect.top;
-      x=Math.max(0,Math.min(rect.width,x));
-      y=Math.max(0,Math.min(rect.height,y));
-      marker.style.left=(x/rect.width*100)+"%";
-      marker.style.top=(y/rect.height*100)+"%";
-      sampleColor(marker);
-    };
-    marker.onpointerup=()=>marker.onpointermove=null;
-  });
+// ==================== VIEW ====================
+
+function switchView(view){
+document.getElementById("view-matcher").classList.toggle("hidden",view!=="matcher");
+document.getElementById("view-inventory").classList.toggle("hidden",view!=="inventory");
+document.getElementById("tab-matcher").classList.toggle("bg-indigo-600",view==="matcher");
+document.getElementById("tab-inventory").classList.toggle("bg-indigo-600",view==="inventory");
+if(view==="inventory")renderInventory();
+}
+
+// ==================== IMAGE + MARKERS ====================
+
+let image=null;
+let markers=[];
+
+const uploadZone=document.getElementById("upload-zone");
+const imageUpload=document.getElementById("image-upload");
+
+uploadZone.onclick=()=>imageUpload.click();
+imageUpload.onchange=e=>{
+const file=e.target.files[0];
+if(!file)return;
+const reader=new FileReader();
+reader.onload=ev=>{
+image=new Image();
+image.onload=drawImage;
+image.src=ev.target.result;
+};
+reader.readAsDataURL(file);
+};
+
+function drawImage(){
+document.getElementById("upload-zone").classList.add("hidden");
+document.getElementById("image-container").classList.remove("hidden");
+const canvas=document.getElementById("image-canvas");
+const ctx=canvas.getContext("2d");
+canvas.width=canvas.clientWidth;
+canvas.height=canvas.clientHeight;
+ctx.drawImage(image,0,0,canvas.width,canvas.height);
+}
+
+function clearImage(){
+markers=[];
+document.getElementById("markers-container").innerHTML="";
+document.getElementById("image-container").classList.add("hidden");
+document.getElementById("upload-zone").classList.remove("hidden");
+document.getElementById("color-matches").innerHTML="No colors selected";
+}
+
+function addMarker(){
+const container=document.getElementById("markers-container");
+const marker=document.createElement("div");
+marker.className="color-marker";
+marker.style.left="50%";
+marker.style.top="50%";
+container.appendChild(marker);
+
+makeDraggable(marker);
+sampleColor(marker);
+markers.push(marker);
+}
+
+function makeDraggable(marker){
+let dragging=false,startX,startY,startLeft,startTop;
+
+marker.onmousedown=e=>{
+dragging=true;
+startX=e.clientX;
+startY=e.clientY;
+startLeft=marker.offsetLeft;
+startTop=marker.offsetTop;
+};
+
+document.onmousemove=e=>{
+if(!dragging)return;
+marker.style.left=startLeft+(e.clientX-startX)+"px";
+marker.style.top=startTop+(e.clientY-startY)+"px";
+sampleColor(marker);
+};
+
+document.onmouseup=()=>dragging=false;
 }
 
 function sampleColor(marker){
-  const canvas=document.createElement("canvas");
-  const ctx=canvas.getContext("2d");
-  canvas.width=modelImg.naturalWidth;
-  canvas.height=modelImg.naturalHeight;
-  ctx.drawImage(modelImg,0,0);
-
-  const rect=modelImg.getBoundingClientRect();
-  const px=parseFloat(marker.style.left)/100;
-  const py=parseFloat(marker.style.top)/100;
-
-  const realX=Math.floor(px*modelImg.naturalWidth);
-  const realY=Math.floor(py*modelImg.naturalHeight);
-
-  const pixel=ctx.getImageData(realX,realY,1,1).data;
-  const hex=rgbToHex(pixel[0],pixel[1],pixel[2]);
-  marker.style.background=hex;
-
-  updatePalette();
+const canvas=document.getElementById("image-canvas");
+const ctx=canvas.getContext("2d");
+const x=marker.offsetLeft+15;
+const y=marker.offsetTop+15;
+try{
+const pixel=ctx.getImageData(x,y,1,1).data;
+const hex=rgbToHex(pixel[0],pixel[1],pixel[2]);
+marker.style.backgroundColor=hex;
+updateMatches();
+}catch{}
 }
 
-function updatePalette(){
-  palette=[];
-  document.querySelectorAll(".marker").forEach(m=>palette.push(m.style.background));
-  renderPalette();
-  renderMatches();
+function updateMatches(){
+const container=document.getElementById("color-matches");
+if(!markers.length){container.innerHTML="No colors selected";return;}
+
+container.innerHTML=markers.map((m,i)=>{
+const hex=m.style.backgroundColor;
+const matches=findClosest(hex);
+return`
+<div class="bg-gray-50 p-4 rounded-xl">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-8 h-8 rounded shadow" style="background:${hex}"></div>
+<p class="font-semibold">${hex}</p>
+</div>
+${matches.map(match=>`
+<div class="flex items-center gap-2 text-sm">
+<div class="w-6 h-6 rounded" style="background:${match.hex}"></div>
+<span>${match.name}</span>
+</div>`).join("")}
+</div>`;
+}).join("");
 }
 
-// =============================
-// Palette Rendering
-// =============================
-
-function renderPalette(){
-  const grid=document.getElementById("paletteGrid");
-  grid.innerHTML="";
-  palette.forEach(hex=>{
-    grid.innerHTML+=`
-      <div class="flex items-center gap-3 p-4 bg-slate-800 rounded-xl border border-slate-700">
-        <div class="w-8 h-8 rounded-lg" style="background:${hex}"></div>
-        <span class="font-mono">${hex}</span>
-      </div>
-    `;
-  });
+function findClosest(hex){
+const target=hexToRgb(hex);
+let paints=[];
+for(const [brand,list] of Object.entries(PAINT_DATABASE)){
+list.forEach(p=>{
+const dist=colorDistance(target,hexToRgb(p.hex));
+paints.push({...p,dist});
+});
+}
+return paints.sort((a,b)=>a.dist-b.dist).slice(0,3);
 }
 
-// =============================
-// Matching
-// =============================
-
-function renderMatches(){
-  const list=document.getElementById("matchesList");
-  list.innerHTML="";
-  const used=new Set();
-  const ownedOnly=document.getElementById("ownedOnly").checked;
-
-  palette.forEach(color=>{
-    const matches=paints
-      .map(p=>({...p,score:deltaE(color,p.hex)}))
-      .sort((a,b)=>a.score-b.score)
-      .filter(p=>!used.has(p.id))
-      .filter(p=>!ownedOnly || owned.has(p.id))
-      .slice(0,3);
-
-    matches.forEach(p=>{
-      used.add(p.id);
-      list.innerHTML+=`
-        <div class="p-4 bg-slate-800 rounded-xl border border-slate-700">
-          <div class="flex justify-between">
-            <span>${p.name}</span>
-            <input type="checkbox"
-              ${owned.has(p.id)?"checked":""}
-              onchange="toggleOwned('${p.id}')">
-          </div>
-          <div class="text-sm text-slate-400">${p.brand}</div>
-        </div>
-      `;
-    });
-  });
-}
-
-// =============================
-// DeltaE Color Distance
-// =============================
-
-function deltaE(hexA,hexB){
-  const a=hexToLab(hexA);
-  const b=hexToLab(hexB);
-  return Math.sqrt(
-    (a.L-b.L)**2 +
-    (a.a-b.a)**2 +
-    (a.b-b.b)**2
-  );
-}
-
-function hexToLab(hex){
-  const {r,g,b}=hexToRgb(hex);
-  return xyzToLab(rgbToXyz(r,g,b));
+function colorDistance(a,b){
+return Math.sqrt((a.r-b.r)**2+(a.g-b.g)**2+(a.b-b.b)**2);
 }
 
 function hexToRgb(hex){
-  return {
-    r:parseInt(hex.substr(1,2),16),
-    g:parseInt(hex.substr(3,2),16),
-    b:parseInt(hex.substr(5,2),16)
-  };
-}
-
-function rgbToXyz(r,g,b){
-  r/=255; g/=255; b/=255;
-  r=r>0.04045?((r+0.055)/1.055)**2.4:r/12.92;
-  g=g>0.04045?((g+0.055)/1.055)**2.4:g/12.92;
-  b=b>0.04045?((b+0.055)/1.055)**2.4:b/12.92;
-
-  return {
-    x:(r*0.4124+g*0.3576+b*0.1805)/0.95047,
-    y:(r*0.2126+g*0.7152+b*0.0722)/1.00000,
-    z:(r*0.0193+g*0.1192+b*0.9505)/1.08883
-  };
-}
-
-function xyzToLab({x,y,z}){
-  const f=t=>t>0.008856?Math.cbrt(t):(7.787*t)+(16/116);
-  const fx=f(x), fy=f(y), fz=f(z);
-  return {
-    L:(116*fy)-16,
-    a:500*(fx-fy),
-    b:200*(fy-fz)
-  };
+const res=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+return res?{r:parseInt(res[1],16),g:parseInt(res[2],16),b:parseInt(res[3],16)}:{r:0,g:0,b:0};
 }
 
 function rgbToHex(r,g,b){
-  return "#" + [r,g,b].map(x=>x.toString(16).padStart(2,"0")).join("").toUpperCase();
-}
-
-function autoExtract(){
-  initializeMarkers(5);
+return"#"+[r,g,b].map(x=>x.toString(16).padStart(2,"0")).join("");
 }
 
 </script>
