@@ -1,999 +1,1337 @@
 <!doctype html>
 <html lang="en" class="h-full">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Paint Palette Picker</title>
 
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
-    body { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
-    h1, h2, h3 { font-family: 'Playfair Display', serif; }
-
-    .drop-zone {
-      border: 2px dashed currentColor;
-      transition: all 0.3s ease;
+    :root {
+      --bg1:#0b1020;
+      --bg2:#0f1b3a;
+      --bg3:#132a52;
+      --accent:#e94560;
+      --surface:rgba(255,255,255,.06);
+      --stroke:rgba(255,255,255,.10);
+      --muted:rgba(226,232,240,.70);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
     }
-    .drop-zone.dragover {
-      transform: scale(1.02);
-      border-style: solid;
-    }
-
-    .paint-swatch {
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .paint-swatch:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-    }
-
-    .color-marker {
-      width: 24px;
-      height: 24px;
+    body { background: linear-gradient(145deg,var(--bg1) 0%,var(--bg2) 50%,var(--bg3) 100%); }
+    .surface { background: var(--surface); backdrop-filter: blur(10px); border: 1px solid var(--stroke); }
+    .drop-zone { border: 2px dashed rgba(255,255,255,.25); transition: all .2s ease; }
+    .drop-zone.dragover { border-style: solid; transform: scale(1.01); }
+    .mono { font-family: var(--mono); }
+    .marker {
+      width: 22px; height: 22px;
       border: 3px solid white;
-      border-radius: 50%;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-      cursor: pointer;
-      transition: transform 0.2s;
+      border-radius: 999px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.35);
       position: absolute;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
     }
-    .color-marker:hover {
-      transform: scale(1.3);
-      z-index: 10;
-    }
-
-    .scroll-container::-webkit-scrollbar { width: 6px; height: 6px; }
-    .scroll-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
-    .scroll-container::-webkit-scrollbar-track { background: transparent; }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fade { animation: fadeIn 0.4s ease forwards; }
-
-    @keyframes pulse-ring {
-      0% { transform: scale(1); opacity: 1; }
-      100% { transform: scale(1.5); opacity: 0; }
-    }
-    .pulse-marker::before {
-      content: '';
-      position: absolute;
-      inset: -4px;
-      border: 2px solid currentColor;
-      border-radius: 50%;
-      animation: pulse-ring 1.5s ease-out infinite;
-      pointer-events: none;
+    .marker.active { transform: scale(1.25); z-index: 30; }
+    .marker:active { cursor: grabbing; }
+    .scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+    .scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 999px; }
+    .scrollbar::-webkit-scrollbar-track { background: transparent; }
+    @media print {
+      body { background: white !important; }
+      .no-print { display: none !important; }
+      .print-surface { background: white !important; border: none !important; }
     }
   </style>
 </head>
 
-<body class="h-full overflow-auto" style="background: linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);">
-  <div id="app" class="min-h-full p-4 md:p-8">
-    <header class="text-center mb-8">
-      <h1 id="main-title" class="text-4xl md:text-5xl font-bold text-white mb-3"
-          style="text-shadow: 0 2px 20px rgba(233, 69, 96, 0.3);">
-        Paint Palette Picker
-      </h1>
-      <p id="subtitle" class="text-lg text-slate-300">
-        Upload an image to extract a color palette with matching miniature paints
-      </p>
+<body class="h-full overflow-auto text-slate-100">
+  <div class="min-h-full p-4 md:p-8">
+    <header class="max-w-6xl mx-auto mb-6">
+      <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Paint Palette Picker</h1>
+          <p class="text-sm md:text-base" style="color:var(--muted)">
+            Upload a photo, extract a palette, and get closest paint matches. Calibrate swatches to build accurate inventories.
+          </p>
+        </div>
+
+        <div class="no-print flex items-center gap-2">
+          <button id="tab-analyze" class="px-4 py-2 rounded-xl font-medium surface hover:bg-white/10 transition">Analyze</button>
+          <button id="tab-calibrate" class="px-4 py-2 rounded-xl font-medium surface hover:bg-white/10 transition">Calibrate</button>
+          <button id="tab-inventory" class="px-4 py-2 rounded-xl font-medium surface hover:bg-white/10 transition">Inventory</button>
+        </div>
+      </div>
     </header>
 
-    <div id="upload-section" class="max-w-2xl mx-auto mb-8">
-      <div class="mb-6 text-center">
-        <h2 class="text-lg font-semibold text-white mb-4">How many colors?</h2>
-        <div class="flex justify-center gap-3 flex-wrap">
-          <button class="palette-size-btn px-6 py-3 rounded-lg font-medium transition-all hover:shadow-lg"
-                  data-size="5"
-                  style="background: rgba(255,255,255,0.1); color: #94a3b8; border: 2px solid transparent;">
-            5 Colors
-          </button>
-          <button class="palette-size-btn px-6 py-3 rounded-lg font-medium transition-all hover:shadow-lg"
-                  data-size="6"
-                  style="background: #e94560; color: white; border: 2px solid #e94560;">
-            6 Colors
-          </button>
-          <button class="palette-size-btn px-6 py-3 rounded-lg font-medium transition-all hover:shadow-lg"
-                  data-size="8"
-                  style="background: rgba(255,255,255,0.1); color: #94a3b8; border: 2px solid transparent;">
-            8 Colors
-          </button>
-          <button class="palette-size-btn px-6 py-3 rounded-lg font-medium transition-all hover:shadow-lg"
-                  data-size="10"
-                  style="background: rgba(255,255,255,0.1); color: #94a3b8; border: 2px solid transparent;">
-            10 Colors
-          </button>
-        </div>
-      </div>
-
-      <div id="drop-zone"
-           class="drop-zone rounded-2xl p-12 text-center cursor-pointer bg-white/5 backdrop-blur border-slate-400/50 hover:bg-white/10 hover:border-rose-400/70 transition-all">
-        <input type="file" id="file-input" accept="image/*" class="hidden">
-        <div class="mb-4">
-          <svg class="w-16 h-16 mx-auto text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </div>
-        <p class="text-xl text-white mb-2 font-medium">Drop your image here</p>
-        <p class="text-slate-400">or click to browse (JPG, PNG, WebP)</p>
-      </div>
-    </div>
-
-    <div id="loading" class="hidden text-center py-16">
-      <div class="inline-block w-16 h-16 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
-      <p class="text-white mt-4 text-lg">Analyzing colors...</p>
-    </div>
-
-    <div id="results" class="hidden max-w-7xl mx-auto animate-fade">
-      <div class="flex flex-wrap gap-3 justify-center mb-6">
-        <button id="new-btn"
-                class="px-6 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-medium rounded-xl transition-all hover:shadow-lg hover:shadow-rose-500/25">
-          New Image
-        </button>
-
-        <button id="download-btn"
-                class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-all hover:shadow-lg hover:shadow-blue-600/25">
-          Download Results
-        </button>
-
-        <div class="flex items-center gap-2 bg-white/10 rounded-xl px-4">
-          <label for="palette-size" class="text-slate-300 text-sm">Colors:</label>
-          <select id="palette-size" class="bg-transparent text-white py-2 outline-none cursor-pointer">
-            <option value="5" class="bg-slate-800">5</option>
-            <option value="6" selected class="bg-slate-800">6</option>
-            <option value="8" class="bg-slate-800">8</option>
-            <option value="10" class="bg-slate-800">10</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white/5 backdrop-blur rounded-2xl p-5 border border-white/10">
-          <h2 class="text-xl font-bold text-white mb-4">Color Locations</h2>
-          <div id="image-container" class="relative rounded-xl overflow-hidden">
-            <img id="preview-image" class="w-full h-auto" alt="Uploaded image">
-            <div id="markers-container" class="absolute inset-0"></div>
+    <!-- ANALYZE -->
+    <section id="view-analyze" class="max-w-6xl mx-auto">
+      <div class="no-print surface rounded-2xl p-4 md:p-6 mb-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-2">
+            <div id="analyze-drop" class="drop-zone rounded-2xl p-10 text-center cursor-pointer hover:bg-white/5 transition">
+              <input id="analyze-file" type="file" accept="image/*" class="hidden" />
+              <div class="text-lg font-semibold mb-2">Drop an image here or click to upload</div>
+              <div class="text-sm" style="color:var(--muted)">JPG, PNG, WebP</div>
+            </div>
           </div>
-        </div>
 
-        <div class="bg-white/5 backdrop-blur rounded-2xl p-5 border border-white/10">
-          <h2 class="text-xl font-bold text-white mb-4">Extracted Palette</h2>
-          <div id="palette-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3"></div>
-        </div>
-      </div>
+          <div class="space-y-4">
+            <div class="surface rounded-2xl p-4">
+              <div class="text-sm font-semibold mb-3">Palette Size</div>
+              <div class="flex gap-2 flex-wrap">
+                <button class="size-btn px-3 py-2 rounded-xl surface hover:bg-white/10 transition" data-size="5">5</button>
+                <button class="size-btn px-3 py-2 rounded-xl surface hover:bg-white/10 transition" data-size="6">6</button>
+                <button class="size-btn px-3 py-2 rounded-xl surface hover:bg-white/10 transition" data-size="8">8</button>
+                <button class="size-btn px-3 py-2 rounded-xl surface hover:bg-white/10 transition" data-size="10">10</button>
+              </div>
 
-      <div class="mt-6 bg-white/5 backdrop-blur rounded-2xl p-5 border border-white/10">
-        <h2 class="text-xl font-bold text-white mb-4">Color Harmonies</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="bg-black/20 rounded-xl p-4">
-            <h3 class="text-white font-semibold mb-3">Complementary</h3>
-            <p class="text-slate-400 text-xs mb-3">Colors opposite on the color wheel</p>
-            <div id="complementary-harmony" class="flex gap-2 flex-wrap"></div>
-          </div>
-          <div class="bg-black/20 rounded-xl p-4">
-            <h3 class="text-white font-semibold mb-3">Triadic</h3>
-            <p class="text-slate-400 text-xs mb-3">Three colors equally spaced on wheel</p>
-            <div id="triadic-harmony" class="flex gap-2 flex-wrap"></div>
-          </div>
-          <div class="bg-black/20 rounded-xl p-4">
-            <h3 class="text-white font-semibold mb-3">Analogous</h3>
-            <p class="text-slate-400 text-xs mb-3">Colors adjacent on the color wheel</p>
-            <div id="analogous-harmony" class="flex gap-2 flex-wrap"></div>
+              <div class="mt-4 flex items-center justify-between gap-3">
+                <label class="text-sm" style="color:var(--muted)" for="topn">Matches per color</label>
+                <select id="topn" class="bg-transparent border border-white/10 rounded-xl px-3 py-2 outline-none">
+                  <option value="3">3</option>
+                  <option value="4" selected>4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                </select>
+              </div>
+
+              <div class="mt-4">
+                <div class="text-sm font-semibold mb-2">Include Brands</div>
+                <div id="brand-toggles" class="grid grid-cols-2 gap-2 text-sm"></div>
+              </div>
+
+              <div class="mt-4">
+                <label class="inline-flex items-center gap-2 text-sm cursor-pointer select-none">
+                  <input id="enforce-order" type="checkbox" class="accent-pink-500" checked />
+                  <span style="color:var(--muted)">Enforce light-to-dark ordering</span>
+                </label>
+                <div class="text-xs mt-1" style="color:var(--muted)">
+                  Helps prevent “highlight” and “base” recommending the same paint.
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <label class="inline-flex items-center gap-2 text-sm cursor-pointer select-none">
+                  <input id="unique-paints" type="checkbox" class="accent-pink-500" checked />
+                  <span style="color:var(--muted)">Avoid using the same paint twice</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="surface rounded-2xl p-4">
+              <button id="export-pdf" class="w-full px-4 py-2 rounded-xl font-semibold bg-rose-500 hover:bg-rose-600 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                Export PDF
+              </button>
+              <button id="reset-analyze" class="w-full mt-2 px-4 py-2 rounded-xl font-semibold surface hover:bg-white/10 transition">
+                New Image
+              </button>
+              <div class="text-xs mt-2" style="color:var(--muted)">
+                PDF exports the image and the per-color match table.
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="mt-6 bg-white/5 backdrop-blur rounded-2xl p-5 border border-white/10">
-        <h2 class="text-xl font-bold text-white mb-2">Paint Matches by Brand</h2>
-        <p class="text-slate-400 text-sm mb-5">Closest matching colors from miniature paint brands</p>
-        <div id="brands-container" class="space-y-6"></div>
+      <div id="analyze-loading" class="hidden text-center py-14">
+        <div class="inline-block w-14 h-14 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+        <div class="mt-3 text-sm" style="color:var(--muted)">Analyzing colors...</div>
       </div>
-    </div>
+
+      <!-- PDF CONTENT (also used on screen) -->
+      <div id="pdf-root" class="hidden print-surface surface rounded-2xl p-4 md:p-6">
+        <div class="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <div class="text-xl font-bold">Paint Palette Analysis</div>
+            <div id="pdf-subtitle" class="text-sm" style="color:var(--muted)"></div>
+          </div>
+          <div class="text-xs mono" style="color:var(--muted)" id="pdf-timestamp"></div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="surface rounded-2xl p-4">
+            <div class="text-sm font-semibold mb-3">Color Locations</div>
+            <div id="img-wrap" class="relative rounded-xl overflow-hidden border border-white/10 bg-black">
+              <img id="model-img" class="w-full h-auto block" alt="Uploaded" />
+              <div id="marker-layer" class="absolute inset-0"></div>
+            </div>
+            <div class="mt-3 text-xs" style="color:var(--muted)">
+              Drag markers to resample. Clicking a swatch highlights its marker.
+            </div>
+          </div>
+
+          <div class="surface rounded-2xl p-4">
+            <div class="text-sm font-semibold mb-3">Extracted Palette</div>
+            <div id="palette-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-3"></div>
+
+            <div class="mt-4 border-t border-white/10 pt-4">
+              <div class="text-sm font-semibold mb-2">Matches</div>
+              <div id="matches-table" class="space-y-3 max-h-[420px] overflow-auto scrollbar pr-1"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CALIBRATE -->
+    <section id="view-calibrate" class="hidden max-w-6xl mx-auto">
+      <div class="surface rounded-2xl p-4 md:p-6 mb-6">
+        <div class="flex flex-col lg:flex-row gap-4 lg:items-start lg:justify-between">
+          <div class="lg:w-2/3">
+            <div class="text-lg font-semibold mb-1">Calibration Mode</div>
+            <div class="text-sm" style="color:var(--muted)">
+              Upload a swatch chart image, click a swatch, name it, and it is added to the inventory for that brand.
+              This is the best way to build accurate Vallejo inventories.
+            </div>
+
+            <div id="cal-drop" class="drop-zone rounded-2xl p-10 text-center cursor-pointer hover:bg-white/5 transition mt-4">
+              <input id="cal-file" type="file" accept="image/*" class="hidden" />
+              <div class="text-base font-semibold mb-2">Drop a swatch chart here or click to upload</div>
+              <div class="text-sm" style="color:var(--muted)">Then click swatches to add paints</div>
+            </div>
+
+            <div class="mt-4 surface rounded-2xl p-3">
+              <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div class="flex items-center gap-3">
+                  <label class="text-sm font-semibold" for="cal-brand">Brand</label>
+                  <select id="cal-brand" class="bg-transparent border border-white/10 rounded-xl px-3 py-2 outline-none"></select>
+                </div>
+
+                <div class="flex items-center gap-3">
+                  <label class="text-sm font-semibold" for="sample-radius">Sample radius</label>
+                  <input id="sample-radius" type="range" min="1" max="12" value="5" />
+                  <span id="sample-radius-label" class="text-xs mono" style="color:var(--muted)">5</span>
+                </div>
+
+                <button id="clear-cal" class="px-3 py-2 rounded-xl surface hover:bg-white/10 transition">Clear Image</button>
+              </div>
+            </div>
+
+            <div class="mt-4 surface rounded-2xl p-4">
+              <div class="text-sm font-semibold mb-2">Chart</div>
+              <div class="relative rounded-xl overflow-hidden border border-white/10 bg-black">
+                <canvas id="cal-canvas" class="w-full block"></canvas>
+                <div id="cal-crosshair" class="hidden absolute pointer-events-none" style="width:12px;height:12px;border:2px solid white;border-radius:999px;transform:translate(-6px,-6px);"></div>
+              </div>
+              <div class="mt-3 text-xs" style="color:var(--muted)">
+                Click a swatch to sample its color. You will be prompted for the paint name. Optional: include a code in the name (example: "70.951 White").
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:w-1/3">
+            <div class="surface rounded-2xl p-4">
+              <div class="text-sm font-semibold mb-2">Last Sample</div>
+              <div class="flex items-center gap-3">
+                <div id="last-chip" class="w-12 h-12 rounded-xl border border-white/10" style="background:#000"></div>
+                <div class="min-w-0">
+                  <div id="last-hex" class="mono text-sm font-semibold">#000000</div>
+                  <div id="last-rgb" class="mono text-xs" style="color:var(--muted)">(0,0,0)</div>
+                </div>
+              </div>
+
+              <div class="mt-4 border-t border-white/10 pt-4">
+                <div class="text-sm font-semibold mb-2">Inventory Tools</div>
+
+                <button id="export-json" class="w-full px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 transition">
+                  Download Inventory JSON
+                </button>
+
+                <div class="mt-2">
+                  <label class="block text-xs mb-1" style="color:var(--muted)">Import Inventory JSON</label>
+                  <input id="import-json" type="file" accept="application/json" class="block w-full text-sm" />
+                </div>
+
+                <button id="wipe-brand" class="w-full mt-2 px-3 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 transition">
+                  Wipe Selected Brand
+                </button>
+
+                <div class="mt-2 text-xs" style="color:var(--muted)">
+                  Inventory is saved to your browser (localStorage). JSON export is how you keep a permanent copy.
+                </div>
+              </div>
+            </div>
+
+            <div class="surface rounded-2xl p-4 mt-4">
+              <div class="flex items-center justify-between gap-2">
+                <div class="text-sm font-semibold">Selected Brand Inventory</div>
+                <div id="brand-count" class="text-xs mono" style="color:var(--muted)"></div>
+              </div>
+              <div id="brand-list" class="mt-3 max-h-[520px] overflow-auto scrollbar pr-1 space-y-2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INVENTORY -->
+    <section id="view-inventory" class="hidden max-w-6xl mx-auto">
+      <div class="surface rounded-2xl p-4 md:p-6">
+        <div class="text-lg font-semibold mb-1">Inventory</div>
+        <div class="text-sm mb-4" style="color:var(--muted)">
+          These are the paint inventories currently loaded. You can build Vallejo (and improve all brands) in Calibration mode.
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-2 surface rounded-2xl p-4">
+            <div class="flex items-center justify-between gap-2">
+              <div class="text-sm font-semibold">All Brands</div>
+              <button id="download-all-json" class="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 transition">
+                Download Inventory JSON
+              </button>
+            </div>
+            <div id="inventory-summary" class="mt-3 space-y-2"></div>
+          </div>
+
+          <div class="surface rounded-2xl p-4">
+            <div class="text-sm font-semibold mb-2">Notes</div>
+            <ul class="text-sm space-y-2" style="color:var(--muted)">
+              <li>Vallejo is best built via calibration from your chart image.</li>
+              <li>Match accuracy depends on inventory quality and calibration.</li>
+              <li>Use JSON export to keep your inventory backed up.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <canvas id="scratch" class="hidden"></canvas>
   </div>
 
-  <canvas id="canvas" class="hidden"></canvas>
-
   <script>
-    const paintBrands = {
+    /* ------------------------------
+      INVENTORY (brands + starter lists)
+      - Vallejo is intentionally empty by default for calibration
+      - You can calibrate/override any brand
+    ------------------------------ */
+
+    const DEFAULT_INVENTORY = {
       citadel: {
-        name: "Citadel",
-        logo: "",
+        name: "Citadel Base (Starter)",
         colors: [
-          { name: "Flash Gitz Yellow", hex: "#FFFF00" },
-          { name: "Yriel Yellow", hex: "#FFDD00" },
-          { name: "Averland Sunset", hex: "#FFCC00" },
-          { name: "Tau Light Ochre", hex: "#FFBB00" },
-          { name: "Castellan Green", hex: "#009900" },
-          { name: "Caledor Sky", hex: "#00AAFF" },
-          { name: "Teclis Blue", hex: "#0066FF" },
-          { name: "Kantor Blue", hex: "#003399" },
-          { name: "Altdorf Guard Blue", hex: "#003366" },
-          { name: "Soulblight Green", hex: "#003300" },
-          { name: "Death World Forest", hex: "#006600" },
-          { name: "Deepkin Dark Teal", hex: "#004455" },
-          { name: "Khorne Red", hex: "#FF0000" },
-          { name: "Mephiston Red", hex: "#CC0000" },
-          { name: "Evil Sunz Red", hex: "#FF3333" },
-          { name: "Wazdakka Red", hex: "#CC3333" },
-          { name: "Genestealer Purple", hex: "#660066" },
-          { name: "Xereus Purple", hex: "#330066" },
-          { name: "Soulblight Purple", hex: "#330033" },
-          { name: "Naggaroth Night", hex: "#440055" },
-          { name: "Ionrach Skin", hex: "#FFFFCC" },
-          { name: "Rakarth Flesh", hex: "#CCAA99" },
-          { name: "Bugman's Glow", hex: "#CC6633" },
-          { name: "Skrag Brown", hex: "#663333" },
-          { name: "Rhinox Hide", hex: "#330000" },
-          { name: "Black Templar", hex: "#000000" },
-          { name: "Abaddon Black", hex: "#0A0A0A" },
-          { name: "Leadbelcher", hex: "#666666" },
-          { name: "Ironbreaker", hex: "#999999" },
-          { name: "Runefang Steel", hex: "#CCCCCC" },
-          { name: "White Scar", hex: "#FFFFDD" },
-          { name: "Ceramite White", hex: "#EEEEEE" }
+          { name: "Abaddon Black", hex: "#231f20" },
+          { name: "Averland Sunset", hex: "#fdb825" },
+          { name: "Balthasar Gold", hex: "#a47552" },
+          { name: "Bugman's Glow", hex: "#834f44" },
+          { name: "Caliban Green", hex: "#00401a" },
+          { name: "Celestra Grey", hex: "#90a8a8" },
+          { name: "Corax White", hex: "#ffffff" },
+          { name: "Daemonette Hide", hex: "#696684" },
+          { name: "Death Guard Green", hex: "#848a66" },
+          { name: "Dryad Bark", hex: "#33312d" },
+          { name: "Ionrach Skin", hex: "#dbc8a0" },
+          { name: "Jokaero Orange", hex: "#ee3823" },
+          { name: "Kantor Blue", hex: "#02134e" },
+          { name: "Khorne Red", hex: "#6a0001" },
+          { name: "Leadbelcher", hex: "#888d8f" },
+          { name: "Macragge Blue", hex: "#0d407f" },
+          { name: "Mechanicus Standard Grey", hex: "#3d4b4d" },
+          { name: "Mephiston Red", hex: "#9a1115" },
+          { name: "Morghast Bone", hex: "#c4b998" },
+          { name: "Naggaroth Night", hex: "#3d3354" },
+          { name: "Rakarth Flesh", hex: "#a29e91" },
+          { name: "Retributor Armour", hex: "#c39e3e" },
+          { name: "Rhinox Hide", hex: "#462f30" },
+          { name: "Screamer Pink", hex: "#7c1645" },
+          { name: "Steel Legion Drab", hex: "#5e5134" },
+          { name: "Stegadon Scale Green", hex: "#074863" },
+          { name: "The Fang", hex: "#405b71" },
+          { name: "Thousand Sons Blue", hex: "#00506f" },
+          { name: "Waaagh! Flesh", hex: "#1f5429" },
+          { name: "Warplock Bronze", hex: "#927d7b" },
+          { name: "XV-88", hex: "#72491e" },
+          { name: "Zandri Dust", hex: "#9e915c" }
         ]
       },
+
       armypainter: {
-        name: "Army Painter",
-        logo: "",
+        name: "Army Painter Warpaints (Non-Metallic Starter)",
         colors: [
-          { name: "Daemonic Yellow", hex: "#FFFF00" },
-          { name: "Golden Yellow", hex: "#FFCC00" },
-          { name: "Elven Yellow", hex: "#FFFF99" },
-          { name: "Leather Brown", hex: "#996633" },
-          { name: "Beasty Brown", hex: "#663333" },
-          { name: "Skeleton Bone", hex: "#FFFFCC" },
-          { name: "Alien Green", hex: "#00CC00" },
-          { name: "Forest Green", hex: "#006600" },
-          { name: "Dragon Green", hex: "#009900" },
-          { name: "Deep Blue", hex: "#000099" },
-          { name: "Electric Blue", hex: "#0066FF" },
-          { name: "Cyan Blue", hex: "#00FFFF" },
-          { name: "Dragon Red", hex: "#FF0000" },
-          { name: "Royal Red", hex: "#CC0000" },
-          { name: "Goblin Green", hex: "#339933" },
-          { name: "Purple Tone", hex: "#663399" },
-          { name: "Monster Brown", hex: "#333333" },
-          { name: "Filthy Brown", hex: "#664433" },
-          { name: "Shadowed Steel", hex: "#555555" },
-          { name: "Shining Silver", hex: "#EEEEEE" },
-          { name: "Black", hex: "#000000" },
-          { name: "Dark Skin Tone", hex: "#773300" },
-          { name: "Medium Skin Tone", hex: "#CC8844" },
-          { name: "Light Skin Tone", hex: "#FFCCAA" },
-          { name: "Elf Skin Tone", hex: "#FFDD99" },
-          { name: "Orc Skin Tone", hex: "#669966" },
-          { name: "Troll Green", hex: "#449944" },
-          { name: "Undead Flesh", hex: "#CCCCCC" },
-          { name: "Battleship Gray", hex: "#666666" },
-          { name: "Gun Metal", hex: "#444444" },
-          { name: "Brass Bone", hex: "#DDBB55" },
-          { name: "Shiny Gold", hex: "#FFDD00" }
+          { name: "Matt Black", hex: "#1a1a1a" },
+          { name: "Matt White", hex: "#f2f2f2" },
+          { name: "Skeleton Bone", hex: "#dfd9c8" },
+          { name: "Barbarian Flesh", hex: "#e2a77a" },
+          { name: "Tanned Flesh", hex: "#c28858" },
+          { name: "Elven Flesh", hex: "#f0c19a" },
+          { name: "Basilisk Brown", hex: "#a8742a" },
+          { name: "Desert Yellow", hex: "#c9b77d" },
+          { name: "Fur Brown", hex: "#7a4a32" },
+          { name: "Oak Brown", hex: "#483027" },
+          { name: "Leather Brown", hex: "#8c6744" },
+          { name: "Sulfide Ochre", hex: "#aa8d0e" },
+          { name: "Daemonic Yellow", hex: "#ffc700" },
+          { name: "Lava Orange", hex: "#e35b15" },
+          { name: "Mythical Orange", hex: "#f26722" },
+          { name: "Fire Lizard", hex: "#f87614" },
+          { name: "Dragon Red", hex: "#b31218" },
+          { name: "Pure Red", hex: "#d61c23" },
+          { name: "Pixie Pink", hex: "#faafc8" },
+          { name: "Warlock Purple", hex: "#5a2a56" },
+          { name: "Alien Purple", hex: "#6b3064" },
+          { name: "Deep Blue", hex: "#021c4c" },
+          { name: "Ultramarine Blue", hex: "#15367b" },
+          { name: "Crystal Blue", hex: "#4b95c5" },
+          { name: "Electric Blue", hex: "#49c3d8" },
+          { name: "Hydra Turquoise", hex: "#3c968c" },
+          { name: "Jungle Green", hex: "#134a3a" },
+          { name: "Goblin Green", hex: "#5a9b53" },
+          { name: "Greenskin", hex: "#728641" },
+          { name: "Commando Green", hex: "#3f4938" },
+          { name: "Army Green", hex: "#506751" },
+          { name: "Uniform Grey", hex: "#5e6366" },
+          { name: "Ash Grey", hex: "#9b9b9b" },
+          { name: "Fog Grey", hex: "#c0c5c1" }
         ]
       },
+
       proacryl: {
-        name: "Pro Acryl",
-        logo: "",
+        name: "Pro Acryl (Selective Starter)",
         colors: [
-          { name: "Pristine Blue", hex: "#0070CC" },
-          { name: "Ultramarine", hex: "#001F7F" },
-          { name: "Azure", hex: "#007FFF" },
-          { name: "Turquoise", hex: "#00CCCC" },
-          { name: "Aquamarine", hex: "#00FFCC" },
-          { name: "Pine Green", hex: "#006633" },
-          { name: "Emerald Green", hex: "#00CC66" },
-          { name: "Kelly Green", hex: "#33CC33" },
-          { name: "Lime Green", hex: "#CCFF33" },
-          { name: "Camo Green", hex: "#669933" },
-          { name: "Scarlet Red", hex: "#FF0033" },
-          { name: "Dragon Red", hex: "#CC0000" },
-          { name: "Carmine Red", hex: "#FF3333" },
-          { name: "Imperial Purple", hex: "#330099" },
-          { name: "Warlord Purple", hex: "#663399" },
-          { name: "Mauve", hex: "#9966CC" },
-          { name: "Regal Skin Tone", hex: "#FFCC99" },
-          { name: "Elf Skin Tone", hex: "#FFDDAA" },
-          { name: "Orc Skin Tone", hex: "#99BB66" },
-          { name: "Ghoul Skin Tone", hex: "#CCCCAA" },
-          { name: "Bone White", hex: "#FFFFDD" },
-          { name: "Pure White", hex: "#FFFFFF" },
-          { name: "Jet Black", hex: "#000000" },
-          { name: "Urban Grey", hex: "#666666" },
-          { name: "Stainless Steel", hex: "#CCCCCC" },
-          { name: "Imperial Gold", hex: "#FFD700" },
-          { name: "Burnished Gold", hex: "#CC9900" },
-          { name: "Leather Brown", hex: "#664433" },
-          { name: "Earth Brown", hex: "#996633" },
-          { name: "Scorched Brown", hex: "#663333" },
-          { name: "Solar Yellow", hex: "#FFFF00" },
-          { name: "Sunburst Yellow", hex: "#FFFF66" }
+          { name: "Coal Black", hex: "#1b1b1b" },
+          { name: "Bold Pyrrole Red", hex: "#c11b1b" },
+          { name: "Green", hex: "#2c7a3f" },
+          { name: "Blue", hex: "#2f5da8" },
+          { name: "Golden Yellow", hex: "#f2b705" },
+          { name: "Orange", hex: "#f47a1f" },
+          { name: "Burnt Red", hex: "#a02c2c" },
+          { name: "Mahogany", hex: "#6e3c2a" },
+          { name: "Purple", hex: "#5c3a8c" },
+          { name: "Magenta", hex: "#c03c7a" },
+          { name: "Sky Blue", hex: "#4fa6e5" },
+          { name: "Ivory", hex: "#f4f1e8" },
+          { name: "Tan Flesh", hex: "#d8a37a" },
+          { name: "Dark Blue", hex: "#1e3e7a" },
+          { name: "Camo Green", hex: "#5b6e4b" },
+          { name: "Jade", hex: "#3f8f7a" }
         ]
       },
+
       vallejo: {
-        name: "Vallejo Game Color",
-        logo: "",
+        name: "Vallejo Model Color (Calibrate)",
         colors: [
-          { name: "Sun Yellow", hex: "#FFFF00" },
-          { name: "Dead Yellow", hex: "#FFDD00" },
-          { name: "Olive Green", hex: "#99AA33" },
-          { name: "Deep Green", hex: "#336633" },
-          { name: "Forest Green", hex: "#336600" },
-          { name: "Goblin Green", hex: "#669933" },
-          { name: "Cold Grey", hex: "#6699CC" },
-          { name: "Light Sea Blue", hex: "#3399FF" },
-          { name: "Deep Sea Blue", hex: "#003366" },
-          { name: "Electric Blue", hex: "#0066FF" },
-          { name: "Plasma Red", hex: "#FF3333" },
-          { name: "Gory Red", hex: "#CC0000" },
-          { name: "Blood Red", hex: "#990000" },
-          { name: "Scarlet Red", hex: "#FF0033" },
-          { name: "Royal Purple", hex: "#663399" },
-          { name: "Black Violet", hex: "#330066" },
-          { name: "Sombre Violet", hex: "#442288" },
-          { name: "Magenta", hex: "#FF00FF" },
-          { name: "Barbarian Skin", hex: "#FFCC99" },
-          { name: "Dwarf Skin", hex: "#DDAA77" },
-          { name: "Elf Skin", hex: "#FFDDAA" },
-          { name: "Orc Flesh", hex: "#669966" },
-          { name: "Ghoul Flesh", hex: "#CCCCAA" },
-          { name: "Lich Purple", hex: "#996699" },
-          { name: "Bone White", hex: "#FFFFDD" },
-          { name: "Off White", hex: "#EEEEEE" },
-          { name: "Ivory", hex: "#FFFACD" },
-          { name: "Basalt Grey", hex: "#333333" },
-          { name: "Gun Metal", hex: "#444444" },
-          { name: "Gunmetal Steel", hex: "#555555" },
-          { name: "Brass", hex: "#DDAA33" },
-          { name: "Polished Gold", hex: "#FFDD00" }
+          // Empty by default. Build via calibration.
         ]
       }
     };
 
-    let extractedPalette = [];
-    let currentImageWithBg = null;
+    const STORAGE_KEY = "ppp_inventory_v1";
 
-    function hexToRgb(hex) {
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-      return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-      } : { r: 0, g: 0, b: 0 };
+    function loadInventory() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return structuredClone(DEFAULT_INVENTORY);
+        const parsed = JSON.parse(raw);
+        return mergeInventory(structuredClone(DEFAULT_INVENTORY), parsed);
+      } catch {
+        return structuredClone(DEFAULT_INVENTORY);
+      }
     }
 
-    function rgbToLab(rgb) {
-      let r = rgb.r / 255, g = rgb.g / 255, b = rgb.b / 255;
-      r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
-      g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
-      b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
-
-      let x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
-      let y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.00000;
-      let z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
-
-      x = x > 0.008856 ? Math.pow(x, 1/3) : (7.787 * x) + 16/116;
-      y = y > 0.008856 ? Math.pow(y, 1/3) : (7.787 * y) + 16/116;
-      z = z > 0.008856 ? Math.pow(z, 1/3) : (7.787 * z) + 16/116;
-
-      return { l: (116 * y) - 16, a: 500 * (x - y), b: 200 * (y - z) };
-    }
-
-    function colorDistance(hex1, hex2) {
-      const lab1 = rgbToLab(hexToRgb(hex1));
-      const lab2 = rgbToLab(hexToRgb(hex2));
-      return Math.sqrt(
-        Math.pow(lab2.l - lab1.l, 2) +
-        Math.pow(lab2.a - lab1.a, 2) +
-        Math.pow(lab2.b - lab1.b, 2)
-      );
-    }
-
-    function findBestMatch(targetHex, brandColors) {
-      let bestMatch = null;
-      let bestDistance = Infinity;
-
-      for (const color of brandColors) {
-        const distance = colorDistance(targetHex, color.hex);
-        if (distance < bestDistance) {
-          bestDistance = distance;
-          bestMatch = { ...color, distance };
+    function mergeInventory(base, incoming) {
+      // Preserve base shape; allow incoming to override and add colors.
+      for (const key of Object.keys(base)) {
+        if (incoming && incoming[key]) {
+          base[key].name = incoming[key].name || base[key].name;
+          if (Array.isArray(incoming[key].colors)) base[key].colors = incoming[key].colors;
         }
       }
-      return bestMatch;
+      // Allow additional brands (future)
+      if (incoming) {
+        for (const k of Object.keys(incoming)) {
+          if (!base[k] && incoming[k] && incoming[k].name && Array.isArray(incoming[k].colors)) {
+            base[k] = incoming[k];
+          }
+        }
+      }
+      return base;
     }
 
-    function extractColors(imageData, numColors) {
+    function saveInventory(inv) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(inv));
+    }
+
+    let inventory = loadInventory();
+
+    /* ------------------------------
+      COLOR UTILS (Lab distance + luminance)
+    ------------------------------ */
+
+    function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+
+    function hexToRgb(hex) {
+      const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "");
+      if (!m) return { r:0, g:0, b:0 };
+      return { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) };
+    }
+
+    function rgbToHex(r,g,b) {
+      return "#" + [r,g,b].map(v => clamp(Math.round(v),0,255).toString(16).padStart(2,"0")).join("").toUpperCase();
+    }
+
+    function rgbToXyz({r,g,b}) {
+      let R = r/255, G = g/255, B = b/255;
+      R = R > 0.04045 ? Math.pow((R+0.055)/1.055, 2.4) : R/12.92;
+      G = G > 0.04045 ? Math.pow((G+0.055)/1.055, 2.4) : G/12.92;
+      B = B > 0.04045 ? Math.pow((B+0.055)/1.055, 2.4) : B/12.92;
+
+      const x = (R*0.4124 + G*0.3576 + B*0.1805) / 0.95047;
+      const y = (R*0.2126 + G*0.7152 + B*0.0722) / 1.00000;
+      const z = (R*0.0193 + G*0.1192 + B*0.9505) / 1.08883;
+      return {x,y,z};
+    }
+
+    function xyzToLab({x,y,z}) {
+      const f = (t) => t > 0.008856 ? Math.pow(t, 1/3) : (7.787*t) + 16/116;
+      const fx = f(x), fy = f(y), fz = f(z);
+      return { L:(116*fy)-16, a:500*(fx-fy), b:200*(fy-fz) };
+    }
+
+    function hexToLab(hex) {
+      return xyzToLab(rgbToXyz(hexToRgb(hex)));
+    }
+
+    function deltaE76(hex1, hex2) {
+      const a = hexToLab(hex1), b = hexToLab(hex2);
+      return Math.sqrt((a.L-b.L)**2 + (a.a-b.a)**2 + (a.b-b.b)**2);
+    }
+
+    function luminance(hex) {
+      const {r,g,b} = hexToRgb(hex);
+      return (0.299*r + 0.587*g + 0.114*b) / 255;
+    }
+
+    /* ------------------------------
+      ANALYZE: palette extraction (k-means)
+    ------------------------------ */
+
+    function extractColorsKMeans(imageData, k) {
+      const { data, width, height } = imageData;
+
+      // Sample pixels (stride for performance)
+      const stride = Math.max(1, Math.floor(Math.sqrt((width*height)/25000)));
       const pixels = [];
-      const locations = [];
+      const locs = [];
 
-      for (let i = 0; i < imageData.data.length; i += 4) {
-        const r = imageData.data[i];
-        const g = imageData.data[i + 1];
-        const b = imageData.data[i + 2];
-
-        pixels.push([r, g, b]);
-        const pixelIndex = i / 4;
-        const x = pixelIndex % imageData.width;
-        const y = Math.floor(pixelIndex / imageData.width);
-        locations.push({ x, y });
+      for (let y=0; y<height; y+=stride) {
+        for (let x=0; x<width; x+=stride) {
+          const i = (y*width + x)*4;
+          const a = data[i+3];
+          if (a < 32) continue; // skip near-transparent
+          pixels.push([data[i], data[i+1], data[i+2]]);
+          locs.push([x,y]);
+        }
       }
 
       if (pixels.length === 0) {
-        return Array(numColors).fill(0).map(() => ({
-          hex: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0').toUpperCase(),
-          location: { x: Math.random() * 100, y: Math.random() * 100 }
-        }));
+        return Array.from({length:k}, (_,i)=>({hex:"#000000", location:{x:50,y:50}}));
       }
 
+      // Init centroids
       let centroids = [];
-      for (let i = 0; i < numColors; i++) {
-        const randomIdx = Math.floor(Math.random() * pixels.length);
-        centroids.push([...pixels[randomIdx]]);
+      for (let i=0; i<k; i++) {
+        const idx = Math.floor(Math.random()*pixels.length);
+        centroids.push([...pixels[idx]]);
       }
 
-      for (let iter = 0; iter < 15; iter++) {
-        const clusters = Array.from({ length: numColors }, () => []);
-
-        for (let pidx = 0; pidx < pixels.length; pidx++) {
-          const pixel = pixels[pidx];
-          let minDist = Infinity;
-          let closestIdx = 0;
-
-          for (let j = 0; j < centroids.length; j++) {
-            const dist = Math.sqrt(
-              Math.pow(pixel[0] - centroids[j][0], 2) +
-              Math.pow(pixel[1] - centroids[j][1], 2) +
-              Math.pow(pixel[2] - centroids[j][2], 2)
-            );
-            if (dist < minDist) {
-              minDist = dist;
-              closestIdx = j;
-            }
+      const iters = 14;
+      for (let it=0; it<iters; it++) {
+        const clusters = Array.from({length:k}, ()=>[]);
+        for (let pi=0; pi<pixels.length; pi++) {
+          const p = pixels[pi];
+          let best = 0, bestD = Infinity;
+          for (let c=0; c<k; c++) {
+            const cc = centroids[c];
+            const d = (p[0]-cc[0])**2 + (p[1]-cc[1])**2 + (p[2]-cc[2])**2;
+            if (d < bestD) { bestD = d; best = c; }
           }
-          clusters[closestIdx].push(pidx);
+          clusters[best].push(pi);
         }
 
-        for (let j = 0; j < numColors; j++) {
-          if (clusters[j].length > 0) {
-            let r = 0, g = 0, b = 0;
-            for (const pidx of clusters[j]) {
-              r += pixels[pidx][0];
-              g += pixels[pidx][1];
-              b += pixels[pidx][2];
-            }
-            centroids[j] = [
-              Math.round(r / clusters[j].length),
-              Math.round(g / clusters[j].length),
-              Math.round(b / clusters[j].length)
-            ];
+        for (let c=0; c<k; c++) {
+          if (clusters[c].length === 0) continue;
+          let r=0,g=0,b=0;
+          for (const pi of clusters[c]) {
+            r += pixels[pi][0]; g += pixels[pi][1]; b += pixels[pi][2];
           }
+          centroids[c] = [
+            Math.round(r/clusters[c].length),
+            Math.round(g/clusters[c].length),
+            Math.round(b/clusters[c].length)
+          ];
         }
       }
 
-      const colorResults = centroids.map((centroid) => {
-        const hex = '#' + [centroid[0], centroid[1], centroid[2]]
-          .map(c => Math.round(c).toString(16).padStart(2, '0'))
-          .join('')
-          .toUpperCase();
-
-        let bestPixelIdx = 0;
-        let bestDist = Infinity;
-
-        for (let i = 0; i < pixels.length; i++) {
-          const dist = Math.sqrt(
-            Math.pow(pixels[i][0] - centroid[0], 2) +
-            Math.pow(pixels[i][1] - centroid[1], 2) +
-            Math.pow(pixels[i][2] - centroid[2], 2)
-          );
-          if (dist < bestDist) {
-            bestDist = dist;
-            bestPixelIdx = i;
-          }
+      // Representative pixel location for each centroid
+      const results = centroids.map((c) => {
+        let bestPi = 0, bestD = Infinity;
+        for (let pi=0; pi<pixels.length; pi++) {
+          const p = pixels[pi];
+          const d = (p[0]-c[0])**2 + (p[1]-c[1])**2 + (p[2]-c[2])**2;
+          if (d < bestD) { bestD = d; bestPi = pi; }
         }
-
+        const hex = rgbToHex(c[0],c[1],c[2]);
+        const [x,y] = locs[bestPi];
         return {
-          hex: hex,
-          location: {
-            x: Math.max(0, Math.min(100, locations[bestPixelIdx].x / imageData.width * 100)),
-            y: Math.max(0, Math.min(100, locations[bestPixelIdx].y / imageData.height * 100))
-          }
+          hex,
+          location: { x: (x/width)*100, y:(y/height)*100 }
         };
       });
 
-      colorResults.sort((a, b) => {
-        const labA = rgbToLab(hexToRgb(a.hex));
-        const labB = rgbToLab(hexToRgb(b.hex));
-        return labB.l - labA.l;
-      });
+      // Remove near-duplicates
+      const filtered = [];
+      for (const r of results) {
+        if (!filtered.some(f => deltaE76(f.hex, r.hex) < 6)) filtered.push(r);
+      }
 
-      return colorResults;
+      // Sort by luminance (light to dark)
+      filtered.sort((a,b)=> luminance(b.hex) - luminance(a.hex));
+
+      // Ensure k results
+      while (filtered.length < k) filtered.push(filtered[filtered.length-1] || {hex:"#000000",location:{x:50,y:50}});
+      return filtered.slice(0,k);
     }
 
-    function getLuminance(hex) {
-      const rgb = hexToRgb(hex);
-      return (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+    function sampleHexFromDisplayedImage(imgEl, xPx, yPx) {
+      const canvas = document.getElementById("scratch");
+      const ctx = canvas.getContext("2d", { willReadFrequently:true });
+
+      canvas.width = imgEl.naturalWidth;
+      canvas.height = imgEl.naturalHeight;
+      ctx.drawImage(imgEl, 0, 0);
+
+      const rect = imgEl.getBoundingClientRect();
+      const scaleX = imgEl.naturalWidth / rect.width;
+      const scaleY = imgEl.naturalHeight / rect.height;
+
+      const ix = clamp(Math.round(xPx * scaleX), 0, imgEl.naturalWidth-1);
+      const iy = clamp(Math.round(yPx * scaleY), 0, imgEl.naturalHeight-1);
+
+      const d = ctx.getImageData(ix, iy, 1, 1).data;
+      return rgbToHex(d[0],d[1],d[2]);
     }
 
-    function rgbToHsl(rgb) {
-      let r = rgb.r / 255, g = rgb.g / 255, b = rgb.b / 255;
-      const max = Math.max(r, g, b), min = Math.min(r, g, b);
-      let h, s, l = (max + min) / 2;
+    /* ------------------------------
+      MATCHING
+      - Top N per extracted color
+      - Optional unique-paint constraint
+      - Optional ordering constraint (light to dark)
+    ------------------------------ */
 
-      if (max === min) {
-        h = s = 0;
-      } else {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    function matchPercent(deltaE) {
+      // heuristic mapping; smaller deltaE => closer match
+      // clamp 0..100
+      const pct = 100 - Math.round(deltaE * 2.1);
+      return clamp(pct, 0, 100);
+    }
 
-        switch (max) {
-          case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-          case g: h = ((b - r) / d + 2) / 6; break;
-          case b: h = ((r - g) / d + 4) / 6; break;
+    function getSelectedBrands() {
+      const selected = [];
+      for (const [key] of Object.entries(inventory)) {
+        const el = document.getElementById("brand_" + key);
+        if (el && el.checked) selected.push(key);
+      }
+      return selected;
+    }
+
+    function buildMatchCandidates(targetHex, selectedBrandKeys) {
+      const candidates = [];
+      for (const key of selectedBrandKeys) {
+        const brand = inventory[key];
+        for (const paint of brand.colors) {
+          const dE = deltaE76(targetHex, paint.hex);
+          candidates.push({
+            brandKey: key,
+            brandName: brand.name,
+            name: paint.name,
+            hex: paint.hex.toUpperCase(),
+            deltaE: dE,
+            pct: matchPercent(dE)
+          });
         }
       }
-      return { h: h * 360, s: s * 100, l: l * 100 };
+      candidates.sort((a,b)=> a.deltaE - b.deltaE);
+      return candidates;
     }
 
-    function hslToRgb(hsl) {
-      let h = hsl.h / 360, s = hsl.s / 100, l = hsl.l / 100;
-      let r, g, b;
+    function pickMatchesForPalette(palette, topN, selectedBrands, enforceOrder, uniquePaints) {
+      // For each palette slot: compute top candidates
+      const perColor = palette.map((c, idx) => {
+        const cand = buildMatchCandidates(c.hex, selectedBrands);
+        return { idx, targetHex: c.hex, targetLum: luminance(c.hex), candidates: cand };
+      });
 
-      if (s === 0) {
-        r = g = b = l;
-      } else {
-        const hue2rgb = (p, q, t) => {
-          if (t < 0) t += 1;
-          if (t > 1) t -= 1;
-          if (t < 1/6) return p + (q - p) * 6 * t;
-          if (t < 1/2) return q;
-          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-          return p;
+      // Sort palette by luminance to define order constraints (light -> dark)
+      const lumOrder = [...perColor].sort((a,b)=> b.targetLum - a.targetLum).map(x=>x.idx);
+      const rank = new Map(lumOrder.map((idx, i)=>[idx,i])); // 0 is lightest
+
+      const used = new Set(); // brandKey|name|hex
+      const chosen = new Array(palette.length).fill(null);
+
+      // Greedy assignment: handle in luminance order to satisfy constraints
+      const processOrder = enforceOrder ? lumOrder : perColor.map(x=>x.idx);
+
+      for (const idx of processOrder) {
+        const info = perColor[idx];
+        const allowed = [];
+
+        // If enforcing order, define lum band constraints from neighbors already chosen
+        let minLum = -Infinity;
+        let maxLum = Infinity;
+
+        if (enforceOrder) {
+          // Must be <= previous (lighter) and >= next (darker) chosen luminance (using paint hex luminance)
+          // We approximate with target luminance ordering: keep consistency between slots
+          // Using target lum as constraints rather than chosen paint lum prevents drift.
+          const thisRank = rank.get(idx);
+          for (let r = 0; r < thisRank; r++) {
+            const neighborIdx = lumOrder[r];
+            // neighbor is lighter
+            maxLum = Math.max(maxLum, -Infinity); // no-op; kept for clarity
+          }
+          // We constrain candidates by proximity to target luminance bucket
+          // Use a soft band based on relative rank: higher rank should not be darker than a much darker target, etc.
+          // Practical: require candidate luminance within +/- 0.22 of target luminance
+          // This prevents the same mid-brown being used for both highlight/base in many cases.
+          const tLum = info.targetLum;
+          minLum = tLum - 0.22;
+          maxLum = tLum + 0.22;
+        }
+
+        for (const c of info.candidates) {
+          if (uniquePaints) {
+            const key = c.brandKey + "|" + c.name + "|" + c.hex;
+            if (used.has(key)) continue;
+          }
+
+          if (enforceOrder) {
+            const l = luminance(c.hex);
+            if (l < minLum || l > maxLum) continue;
+          }
+
+          allowed.push(c);
+          if (allowed.length >= topN * 3) break; // enough for selection window
+        }
+
+        // Choose best for assignment
+        const pick = (allowed.length ? allowed : info.candidates).find(c => {
+          if (!uniquePaints) return true;
+          const key = c.brandKey + "|" + c.name + "|" + c.hex;
+          return !used.has(key);
+        }) || info.candidates[0];
+
+        chosen[idx] = {
+          targetHex: info.targetHex,
+          primary: pick,
+          top: (allowed.length ? allowed : info.candidates).slice(0, topN)
         };
 
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        const p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1/3);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1/3);
+        if (uniquePaints && pick) used.add(pick.brandKey + "|" + pick.name + "|" + pick.hex);
       }
 
-      return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+      return chosen;
     }
 
-    function rgbToHex(rgb) {
-      return '#' + [rgb.r, rgb.g, rgb.b]
-        .map(x => Math.round(x).toString(16).padStart(2, '0'))
-        .join('')
-        .toUpperCase();
+    /* ------------------------------
+      UI: Tabs
+    ------------------------------ */
+
+    const viewAnalyze = document.getElementById("view-analyze");
+    const viewCalibrate = document.getElementById("view-calibrate");
+    const viewInventory = document.getElementById("view-inventory");
+
+    function showView(which) {
+      viewAnalyze.classList.toggle("hidden", which !== "analyze");
+      viewCalibrate.classList.toggle("hidden", which !== "calibrate");
+      viewInventory.classList.toggle("hidden", which !== "inventory");
     }
 
-    function getComplementary(hex) {
-      const rgb = hexToRgb(hex);
-      const hsl = rgbToHsl(rgb);
-      return [hex, rgbToHex(hslToRgb({ h: (hsl.h + 180) % 360, s: hsl.s, l: hsl.l }))];
-    }
+    document.getElementById("tab-analyze").addEventListener("click", () => showView("analyze"));
+    document.getElementById("tab-calibrate").addEventListener("click", () => {
+      showView("calibrate");
+      refreshCalibrateBrandList();
+      renderCalBrandInventory();
+    });
+    document.getElementById("tab-inventory").addEventListener("click", () => {
+      showView("inventory");
+      renderInventorySummary();
+    });
 
-    function getTriadic(hex) {
-      const rgb = hexToRgb(hex);
-      const hsl = rgbToHsl(rgb);
-      return [
-        hex,
-        rgbToHex(hslToRgb({ h: (hsl.h + 120) % 360, s: hsl.s, l: hsl.l })),
-        rgbToHex(hslToRgb({ h: (hsl.h + 240) % 360, s: hsl.s, l: hsl.l }))
-      ];
-    }
+    /* ------------------------------
+      UI: Brand toggles
+    ------------------------------ */
 
-    function getAnalogous(hex) {
-      const rgb = hexToRgb(hex);
-      const hsl = rgbToHsl(rgb);
-      return [
-        rgbToHex(hslToRgb({ h: (hsl.h - 30 + 360) % 360, s: hsl.s, l: hsl.l })),
-        hex,
-        rgbToHex(hslToRgb({ h: (hsl.h + 30) % 360, s: hsl.s, l: hsl.l }))
-      ];
-    }
-
-    function renderColorHarmonies() {
-      if (extractedPalette.length === 0) return;
-      const primaryColor = extractedPalette[0].hex;
-
-      const complementary = getComplementary(primaryColor);
-      document.getElementById('complementary-harmony').innerHTML = complementary.map(hex => `
-        <div class="flex flex-col items-center gap-1">
-          <div class="w-12 h-12 rounded-lg shadow-lg border-2 border-white/20" style="background: ${hex};"></div>
-          <span class="text-xs text-slate-400 font-mono">${hex}</span>
-        </div>
-      `).join('');
-
-      const triadic = getTriadic(primaryColor);
-      document.getElementById('triadic-harmony').innerHTML = triadic.map(hex => `
-        <div class="flex flex-col items-center gap-1">
-          <div class="w-12 h-12 rounded-lg shadow-lg border-2 border-white/20" style="background: ${hex};"></div>
-          <span class="text-xs text-slate-400 font-mono">${hex}</span>
-        </div>
-      `).join('');
-
-      const analogous = getAnalogous(primaryColor);
-      document.getElementById('analogous-harmony').innerHTML = analogous.map(hex => `
-        <div class="flex flex-col items-center gap-1">
-          <div class="w-12 h-12 rounded-lg shadow-lg border-2 border-white/20" style="background: ${hex};"></div>
-          <span class="text-xs text-slate-400 font-mono">${hex}</span>
-        </div>
-      `).join('');
-    }
-
-    function renderPalette() {
-      const paletteGrid = document.getElementById('palette-grid');
-      paletteGrid.innerHTML = '';
-
-      extractedPalette.forEach((color, idx) => {
-        const textColor = getLuminance(color.hex) > 0.5 ? '#1a1a2e' : '#ffffff';
-
-        const swatch = document.createElement('div');
-        swatch.className = 'paint-swatch rounded-xl p-4 cursor-pointer';
-        swatch.style.backgroundColor = color.hex;
-        swatch.innerHTML = `
-          <div class="text-xs font-mono font-medium" style="color: ${textColor}">${color.hex}</div>
-          <div class="text-[10px] mt-1 opacity-70" style="color: ${textColor}">Color ${idx + 1}</div>
+    function renderBrandToggles() {
+      const wrap = document.getElementById("brand-toggles");
+      wrap.innerHTML = "";
+      for (const key of Object.keys(inventory)) {
+        const id = "brand_" + key;
+        const row = document.createElement("label");
+        row.className = "inline-flex items-center gap-2 cursor-pointer select-none";
+        row.innerHTML = `
+          <input id="${id}" type="checkbox" class="accent-pink-500" checked />
+          <span style="color:var(--muted)">${inventory[key].name}</span>
         `;
-        swatch.onclick = () => highlightMarker(idx);
-        paletteGrid.appendChild(swatch);
+        wrap.appendChild(row);
+      }
+    }
+
+    renderBrandToggles();
+
+    /* ------------------------------
+      ANALYZE UI + State
+    ------------------------------ */
+
+    let selectedPaletteSize = 6;
+    let extractedPalette = [];
+    let currentMatches = [];
+    let currentImageDataURL = "";
+
+    const analyzeDrop = document.getElementById("analyze-drop");
+    const analyzeFile = document.getElementById("analyze-file");
+    const analyzeLoading = document.getElementById("analyze-loading");
+    const pdfRoot = document.getElementById("pdf-root");
+    const modelImg = document.getElementById("model-img");
+    const markerLayer = document.getElementById("marker-layer");
+    const paletteGrid = document.getElementById("palette-grid");
+    const matchesTable = document.getElementById("matches-table");
+    const exportBtn = document.getElementById("export-pdf");
+
+    document.querySelectorAll(".size-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        selectedPaletteSize = parseInt(btn.dataset.size, 10);
+        document.querySelectorAll(".size-btn").forEach(b => b.classList.remove("bg-white/10"));
+        btn.classList.add("bg-white/10");
       });
+    });
+    // default highlight 6
+    document.querySelector('.size-btn[data-size="6"]').classList.add("bg-white/10");
+
+    analyzeDrop.addEventListener("click", () => analyzeFile.click());
+    analyzeDrop.addEventListener("dragover", (e) => { e.preventDefault(); analyzeDrop.classList.add("dragover"); });
+    analyzeDrop.addEventListener("dragleave", () => analyzeDrop.classList.remove("dragover"));
+    analyzeDrop.addEventListener("drop", (e) => {
+      e.preventDefault();
+      analyzeDrop.classList.remove("dragover");
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) processAnalyzeFile(file);
+    });
+
+    analyzeFile.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) processAnalyzeFile(file);
+    });
+
+    document.getElementById("reset-analyze").addEventListener("click", () => resetAnalyze());
+
+    function resetAnalyze() {
+      extractedPalette = [];
+      currentMatches = [];
+      currentImageDataURL = "";
+      pdfRoot.classList.add("hidden");
+      exportBtn.disabled = true;
+      analyzeFile.value = "";
+      analyzeLoading.classList.add("hidden");
     }
 
-    function sampleColorFromImage(pixelX, pixelY) {
-      const img = document.getElementById('preview-image');
-      const canvas = document.getElementById('canvas');
-      const ctx = canvas.getContext('2d');
-
-      const rect = img.getBoundingClientRect();
-      const x = Math.round((pixelX / rect.width) * img.naturalWidth);
-      const y = Math.round((pixelY / rect.height) * img.naturalHeight);
-
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      ctx.drawImage(img, 0, 0);
-
-      const imageData = ctx.getImageData(Math.max(0, Math.min(x, canvas.width - 1)), Math.max(0, Math.min(y, canvas.height - 1)), 1, 1);
-      const d = imageData.data;
-
-      return '#' + [d[0], d[1], d[2]]
-        .map(v => v.toString(16).padStart(2, '0'))
-        .join('')
-        .toUpperCase();
-    }
-
-    function renderMarkers() {
-      const container = document.getElementById('markers-container');
-      container.innerHTML = '';
-      const imageContainer = document.getElementById('image-container');
-
-      extractedPalette.forEach((color, idx) => {
-        const marker = document.createElement('div');
-        marker.className = 'color-marker pulse-marker';
-        marker.id = `marker-${idx}`;
-        marker.style.backgroundColor = color.hex;
-        marker.style.left = `calc(${color.location.x}% - 12px)`;
-        marker.style.top = `calc(${color.location.y}% - 12px)`;
-        marker.style.color = color.hex;
-        marker.style.cursor = 'grab';
-        marker.title = `Color ${idx + 1}: ${color.hex}`;
-
-        let isDragging = false;
-
-        marker.addEventListener('mousedown', (e) => {
-          e.preventDefault();
-          isDragging = true;
-          marker.style.cursor = 'grabbing';
-          marker.style.zIndex = '30';
-
-          const handleMouseMove = (moveEvent) => {
-            if (!isDragging) return;
-
-            const containerRect = imageContainer.getBoundingClientRect();
-            const x = moveEvent.clientX - containerRect.left;
-            const y = moveEvent.clientY - containerRect.top;
-
-            const boundedX = Math.max(0, Math.min(x, containerRect.width));
-            const boundedY = Math.max(0, Math.min(y, containerRect.height));
-
-            marker.style.left = (boundedX - 12) + 'px';
-            marker.style.top = (boundedY - 12) + 'px';
-          };
-
-          const handleMouseUp = () => {
-            isDragging = false;
-            marker.style.cursor = 'grab';
-            marker.style.zIndex = '20';
-
-            const containerRect = imageContainer.getBoundingClientRect();
-            const markerRect = marker.getBoundingClientRect();
-            const px = markerRect.left - containerRect.left + 12;
-            const py = markerRect.top - containerRect.top + 12;
-
-            const sampledColor = sampleColorFromImage(px, py);
-            extractedPalette[idx].hex = sampledColor;
-            extractedPalette[idx].location = {
-              x: Math.max(0, Math.min(px / containerRect.width * 100, 100)),
-              y: Math.max(0, Math.min(py / containerRect.height * 100, 100))
-            };
-
-            marker.style.backgroundColor = sampledColor;
-            marker.style.color = sampledColor;
-            marker.style.left = `calc(${extractedPalette[idx].location.x}% - 12px)`;
-            marker.style.top = `calc(${extractedPalette[idx].location.y}% - 12px)`;
-
-            renderPalette();
-            renderBrandMatches();
-
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-          };
-
-          document.addEventListener('mousemove', handleMouseMove);
-          document.addEventListener('mouseup', handleMouseUp);
-        });
-
-        marker.addEventListener('click', () => highlightMarker(idx));
-        container.appendChild(marker);
-      });
-    }
-
-    function highlightMarker(idx) {
-      document.querySelectorAll('.color-marker').forEach((m, i) => {
-        m.style.transform = i === idx ? 'scale(1.5)' : 'scale(1)';
-        m.style.zIndex = i === idx ? '20' : '1';
-      });
-    }
-
-    function renderBrandMatches() {
-      const container = document.getElementById('brands-container');
-      container.innerHTML = '';
-
-      Object.entries(paintBrands).forEach(([key, brand]) => {
-        const brandDiv = document.createElement('div');
-        brandDiv.className = 'bg-black/20 rounded-xl p-4';
-
-        let matchesHtml = '';
-        extractedPalette.forEach((color, idx) => {
-          const match = findBestMatch(color.hex, brand.colors);
-          const accuracy = Math.max(0, Math.round(100 - match.distance));
-
-          matchesHtml += `
-            <div class="flex items-center gap-3 bg-white/5 rounded-lg p-3 hover:bg-white/10 transition-colors">
-              <div class="flex-shrink-0 flex gap-1">
-                <div class="w-10 h-10 rounded-lg shadow-inner" style="background: ${color.hex};" title="Extracted"></div>
-                <div class="w-10 h-10 rounded-lg shadow-inner relative" style="background: ${match.hex};" title="${match.name}">
-                  <span class="absolute -top-1 -right-1 text-[10px] bg-green-500 text-white px-1 rounded">${accuracy}%</span>
-                </div>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="text-white font-medium text-sm truncate">${match.name}</div>
-                <div class="text-slate-400 text-xs font-mono">${match.hex}</div>
-              </div>
-            </div>
-          `;
-        });
-
-        brandDiv.innerHTML = `
-          <div class="flex items-center gap-2 mb-4">
-            <h3 class="text-lg font-bold text-white">${brand.name}</h3>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            ${matchesHtml}
-          </div>
-        `;
-        container.appendChild(brandDiv);
-      });
-    }
-
-    function processImage(file) {
-      const loading = document.getElementById('loading');
-      const results = document.getElementById('results');
-
-      loading.classList.remove('hidden');
-      results.classList.add('hidden');
+    function processAnalyzeFile(file) {
+      analyzeLoading.classList.remove("hidden");
+      pdfRoot.classList.add("hidden");
+      exportBtn.disabled = true;
 
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = () => {
+        currentImageDataURL = String(reader.result || "");
         const img = new Image();
-        img.onload = function() {
-          currentImageWithBg = img;
-          document.getElementById('preview-image').src = img.src;
+        img.onload = () => {
+          // draw resized to a working canvas
+          const canvas = document.getElementById("scratch");
+          const ctx = canvas.getContext("2d", { willReadFrequently:true });
 
-          setTimeout(() => processImageForPalette(currentImageWithBg), 80);
+          const max = 260;
+          const scale = Math.min(1, max / Math.max(img.width, img.height));
+          canvas.width = Math.max(1, Math.floor(img.width * scale));
+          canvas.height = Math.max(1, Math.floor(img.height * scale));
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+          extractedPalette = extractColorsKMeans(imageData, selectedPaletteSize);
+
+          modelImg.onload = () => {
+            analyzeLoading.classList.add("hidden");
+            pdfRoot.classList.remove("hidden");
+            exportBtn.disabled = false;
+            renderAnalyze();
+          };
+          modelImg.src = currentImageDataURL;
         };
-        img.src = e.target.result;
+        img.src = currentImageDataURL;
       };
       reader.readAsDataURL(file);
     }
 
-    function processImageForPalette(imageToUse) {
-      const canvas = document.getElementById('canvas');
-      const ctx = canvas.getContext('2d');
+    function renderAnalyze() {
+      const selectedBrands = getSelectedBrands();
+      const topN = parseInt(document.getElementById("topn").value, 10);
+      const enforceOrder = document.getElementById("enforce-order").checked;
+      const uniquePaints = document.getElementById("unique-paints").checked;
 
-      const maxSize = 200;
-      const scale = Math.min(maxSize / imageToUse.width, maxSize / imageToUse.height, 1);
-      canvas.width = Math.round(imageToUse.width * scale);
-      canvas.height = Math.round(imageToUse.height * scale);
-      ctx.drawImage(imageToUse, 0, 0, canvas.width, canvas.height);
+      currentMatches = pickMatchesForPalette(extractedPalette, topN, selectedBrands, enforceOrder, uniquePaints);
 
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const numColors = selectedPaletteSize;
+      // PDF header details
+      const stamp = new Date();
+      document.getElementById("pdf-timestamp").textContent =
+        stamp.toLocaleString() + " | colors=" + extractedPalette.length + " | brands=" + selectedBrands.length;
 
-      extractedPalette = extractColors(imageData, numColors);
+      document.getElementById("pdf-subtitle").textContent =
+        "Top " + topN + " matches per extracted color";
 
-      setTimeout(() => {
-        document.getElementById('loading').classList.add('hidden');
-        document.getElementById('results').classList.remove('hidden');
-        document.getElementById('upload-section').classList.add('hidden');
-
-        renderPalette();
-        renderMarkers();
-        renderColorHarmonies();
-        renderBrandMatches();
-      }, 250);
+      renderPaletteGrid();
+      renderMarkers();
+      renderMatchTable();
     }
 
-    const dropZone = document.getElementById('drop-zone');
-    const fileInput = document.getElementById('file-input');
-    let selectedPaletteSize = 6;
+    document.getElementById("topn").addEventListener("change", () => {
+      if (!currentImageDataURL) return;
+      renderAnalyze();
+    });
+    document.getElementById("enforce-order").addEventListener("change", () => {
+      if (!currentImageDataURL) return;
+      renderAnalyze();
+    });
+    document.getElementById("unique-paints").addEventListener("change", () => {
+      if (!currentImageDataURL) return;
+      renderAnalyze();
+    });
+    document.getElementById("brand-toggles").addEventListener("change", () => {
+      if (!currentImageDataURL) return;
+      renderAnalyze();
+    });
 
-    document.querySelectorAll('.palette-size-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        document.querySelectorAll('.palette-size-btn').forEach(b => {
-          b.style.background = 'rgba(255,255,255,0.1)';
-          b.style.color = '#94a3b8';
-          b.style.borderColor = 'transparent';
-        });
+    function readableTextOn(hex) {
+      return luminance(hex) > 0.55 ? "#0b1020" : "#ffffff";
+    }
 
-        e.target.style.background = '#e94560';
-        e.target.style.color = 'white';
-        e.target.style.borderColor = '#e94560';
+    function renderPaletteGrid() {
+      paletteGrid.innerHTML = "";
+      extractedPalette.forEach((c, idx) => {
+        const sw = document.createElement("button");
+        sw.className = "rounded-2xl p-3 text-left border border-white/10 hover:bg-white/5 transition";
+        sw.style.background = c.hex;
+        const text = readableTextOn(c.hex);
+        sw.innerHTML = `
+          <div class="text-sm font-semibold">Color ${idx+1}</div>
+          <div class="mono text-xs">${c.hex}</div>
+        `;
+        sw.style.color = text;
+        sw.addEventListener("click", () => setActiveMarker(idx));
+        paletteGrid.appendChild(sw);
+      });
+    }
 
-        selectedPaletteSize = parseInt(e.target.dataset.size, 10);
-        document.getElementById('palette-size').value = String(selectedPaletteSize);
+    function setActiveMarker(idx) {
+      const all = markerLayer.querySelectorAll(".marker");
+      all.forEach((m, i) => m.classList.toggle("active", i === idx));
+      // Scroll to matches block
+      const block = document.getElementById("matchblock_" + idx);
+      if (block) block.scrollIntoView({ behavior:"smooth", block:"nearest" });
+    }
 
-        if (currentImageWithBg) {
-          document.getElementById('loading').classList.remove('hidden');
-          setTimeout(() => processImageForPalette(currentImageWithBg), 50);
-        }
+    function renderMarkers() {
+      markerLayer.innerHTML = "";
+      const wrap = document.getElementById("img-wrap");
+
+      extractedPalette.forEach((c, idx) => {
+        const m = document.createElement("div");
+        m.className = "marker";
+        m.style.background = c.hex;
+        m.style.left = `calc(${c.location.x}% - 11px)`;
+        m.style.top = `calc(${c.location.y}% - 11px)`;
+        m.title = "Drag to resample. Click to highlight.";
+
+        let dragging = false;
+
+        const onDown = (ev) => {
+          ev.preventDefault();
+          dragging = true;
+          m.classList.add("active");
+          m.setPointerCapture(ev.pointerId);
+        };
+
+        const onMove = (ev) => {
+          if (!dragging) return;
+          const rect = wrap.getBoundingClientRect();
+          const x = clamp(ev.clientX - rect.left, 0, rect.width);
+          const y = clamp(ev.clientY - rect.top, 0, rect.height);
+          m.style.left = (x - 11) + "px";
+          m.style.top = (y - 11) + "px";
+        };
+
+        const onUp = (ev) => {
+          if (!dragging) return;
+          dragging = false;
+
+          const rect = wrap.getBoundingClientRect();
+          const mx = m.getBoundingClientRect().left - rect.left + 11;
+          const my = m.getBoundingClientRect().top - rect.top + 11;
+
+          const newHex = sampleHexFromDisplayedImage(modelImg, mx, my);
+          const nx = clamp(mx / rect.width * 100, 0, 100);
+          const ny = clamp(my / rect.height * 100, 0, 100);
+
+          extractedPalette[idx].hex = newHex;
+          extractedPalette[idx].location = { x:nx, y:ny };
+          m.style.background = newHex;
+          m.style.left = `calc(${nx}% - 11px)`;
+          m.style.top = `calc(${ny}% - 11px)`;
+
+          renderAnalyze();
+        };
+
+        m.addEventListener("pointerdown", onDown);
+        m.addEventListener("pointermove", onMove);
+        m.addEventListener("pointerup", onUp);
+        m.addEventListener("click", () => setActiveMarker(idx));
+
+        markerLayer.appendChild(m);
+      });
+    }
+
+    function renderMatchTable() {
+      matchesTable.innerHTML = "";
+      const topN = parseInt(document.getElementById("topn").value, 10);
+
+      currentMatches.forEach((m, idx) => {
+        const targetHex = extractedPalette[idx].hex.toUpperCase();
+        const block = document.createElement("div");
+        block.id = "matchblock_" + idx;
+        block.className = "surface rounded-2xl p-3 border border-white/10";
+
+        const rows = m.top.slice(0, topN).map((x, rIdx) => {
+          return `
+            <div class="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-white/5 transition">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-8 h-8 rounded-xl border border-white/10" style="background:${x.hex}"></div>
+                <div class="min-w-0">
+                  <div class="text-sm font-semibold truncate">${escapeHtml(x.name)}</div>
+                  <div class="text-xs truncate" style="color:var(--muted)">${escapeHtml(x.brandName)}</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="mono text-xs">${x.hex}</div>
+                <div class="mono text-xs" style="color:var(--muted)">${x.pct}%</div>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        block.innerHTML = `
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl border border-white/10" style="background:${targetHex}"></div>
+              <div>
+                <div class="text-sm font-semibold">Color ${idx+1}</div>
+                <div class="mono text-xs" style="color:var(--muted)">${targetHex}</div>
+              </div>
+            </div>
+            <button class="px-3 py-2 rounded-xl surface hover:bg-white/10 transition text-xs" data-focus="${idx}">
+              Focus
+            </button>
+          </div>
+          <div class="space-y-1">${rows}</div>
+        `;
+
+        block.querySelector("button[data-focus]")?.addEventListener("click", () => setActiveMarker(idx));
+        matchesTable.appendChild(block);
+      });
+    }
+
+    document.getElementById("export-pdf").addEventListener("click", () => {
+      if (!currentImageDataURL) return;
+
+      const opt = {
+        margin: 8,
+        filename: "paint-palette-analysis.pdf",
+        image: { type: "jpeg", quality: 0.95 },
+        html2canvas: { scale: 2, backgroundColor: "#ffffff" },
+        jsPDF: { orientation: "p", unit: "mm", format: "a4" }
+      };
+
+      // Temporarily force a white background for export
+      const root = document.getElementById("pdf-root");
+      const prevBg = root.style.background;
+      root.style.background = "#ffffff";
+
+      html2pdf().set(opt).from(root).save().finally(() => {
+        root.style.background = prevBg;
       });
     });
 
-    dropZone.onclick = () => fileInput.click();
+    function escapeHtml(s) {
+      return String(s || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
 
-    dropZone.ondragover = (e) => {
-      e.preventDefault();
-      dropZone.classList.add('dragover');
-    };
+    /* ------------------------------
+      CALIBRATION
+    ------------------------------ */
 
-    dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+    const calDrop = document.getElementById("cal-drop");
+    const calFile = document.getElementById("cal-file");
+    const calCanvas = document.getElementById("cal-canvas");
+    const calCtx = calCanvas.getContext("2d", { willReadFrequently:true });
+    const calCrosshair = document.getElementById("cal-crosshair");
 
-    dropZone.ondrop = (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('dragover');
-      const file = e.dataTransfer.files[0];
-      if (file && file.type && file.type.startsWith('image/')) {
-        processImage(file);
+    let calImg = new Image();
+    let calHasImage = false;
+
+    function refreshCalibrateBrandList() {
+      const sel = document.getElementById("cal-brand");
+      sel.innerHTML = "";
+      for (const key of Object.keys(inventory)) {
+        const opt = document.createElement("option");
+        opt.value = key;
+        opt.textContent = inventory[key].name;
+        sel.appendChild(opt);
       }
-    };
+    }
+    refreshCalibrateBrandList();
 
-    fileInput.onchange = (e) => {
-      const file = e.target.files[0];
-      if (file) processImage(file);
-    };
+    document.getElementById("sample-radius").addEventListener("input", (e) => {
+      document.getElementById("sample-radius-label").textContent = String(e.target.value);
+    });
 
-    document.getElementById('new-btn').onclick = () => {
-      document.getElementById('results').classList.add('hidden');
-      document.getElementById('upload-section').classList.remove('hidden');
-      fileInput.value = '';
-      currentImageWithBg = null;
-      extractedPalette = [];
-      document.getElementById('markers-container').innerHTML = '';
-      document.getElementById('palette-grid').innerHTML = '';
-      document.getElementById('brands-container').innerHTML = '';
-      document.getElementById('complementary-harmony').innerHTML = '';
-      document.getElementById('triadic-harmony').innerHTML = '';
-      document.getElementById('analogous-harmony').innerHTML = '';
-    };
+    calDrop.addEventListener("click", () => calFile.click());
+    calDrop.addEventListener("dragover", (e) => { e.preventDefault(); calDrop.classList.add("dragover"); });
+    calDrop.addEventListener("dragleave", () => calDrop.classList.remove("dragover"));
+    calDrop.addEventListener("drop", (e) => {
+      e.preventDefault();
+      calDrop.classList.remove("dragover");
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) loadCalibrationImage(file);
+    });
 
-    document.getElementById('download-btn').onclick = () => {
-      const resultsDiv = document.getElementById('results');
+    calFile.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) loadCalibrationImage(file);
+    });
 
-      const imageCard = document.getElementById('image-container').parentElement;
-      const paletteCard = document.getElementById('palette-grid').parentElement.parentElement;
-      const brandsCard = document.getElementById('brands-container').parentElement;
+    document.getElementById("clear-cal").addEventListener("click", () => {
+      calHasImage = false;
+      calCtx.clearRect(0,0,calCanvas.width,calCanvas.height);
+      calCrosshair.classList.add("hidden");
+      calFile.value = "";
+    });
 
-      imageCard.style.display = 'none';
-      paletteCard.style.display = 'none';
-      brandsCard.style.display = 'none';
-
-      let textContent = 'PAINT PALETTE PICKER RESULTS\n';
-      textContent += '=============================\n\n';
-
-      textContent += 'EXTRACTED PALETTE:\n';
-      textContent += '-----------------\n';
-      extractedPalette.forEach((color, idx) => {
-        textContent += `Color ${idx + 1}: ${color.hex}\n`;
-      });
-
-      textContent += '\n\nPAINT MATCHES BY BRAND:\n';
-      textContent += '----------------------\n\n';
-
-      Object.entries(paintBrands).forEach(([key, brand]) => {
-        textContent += `${brand.name}:\n`;
-        extractedPalette.forEach((color, idx) => {
-          const match = findBestMatch(color.hex, brand.colors);
-          const accuracy = Math.max(0, Math.round(100 - match.distance));
-          textContent += `  Color ${idx + 1} (${color.hex}) -> ${match.name} (${match.hex}) - ${accuracy}% match\n`;
-        });
-        textContent += '\n';
-      });
-
-      const oldText = document.getElementById('text-results');
-      const oldBack = document.getElementById('back-btn');
-      if (oldText) oldText.remove();
-      if (oldBack) oldBack.remove();
-
-      const textDisplay = document.createElement('div');
-      textDisplay.id = 'text-results';
-      textDisplay.style.cssText = [
-        'background: rgba(0,0,0,0.3)',
-        'border: 2px solid #e94560',
-        'border-radius: 12px',
-        'padding: 24px',
-        'margin-top: 24px',
-        'font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-        'white-space: pre-wrap',
-        'word-break: break-word',
-        'color: #e0e0e0',
-        'font-size: 14px',
-        'line-height: 1.6',
-        'user-select: all',
-        'cursor: text',
-        'max-height: 500px',
-        'overflow-y: auto'
-      ].join(';');
-      textDisplay.textContent = textContent;
-
-      const backBtn = document.createElement('button');
-      backBtn.id = 'back-btn';
-      backBtn.textContent = 'Back to Results';
-      backBtn.style.cssText = [
-        'margin-top: 16px',
-        'padding: 10px 20px',
-        'background: #667eea',
-        'color: white',
-        'border: none',
-        'border-radius: 8px',
-        'cursor: pointer',
-        'font-weight: 500'
-      ].join(';');
-
-      backBtn.onclick = () => {
-        textDisplay.remove();
-        backBtn.remove();
-        imageCard.style.display = '';
-        paletteCard.style.display = '';
-        brandsCard.style.display = '';
+    function loadCalibrationImage(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        calImg = new Image();
+        calImg.onload = () => {
+          const maxW = 1400;
+          const scale = Math.min(1, maxW / calImg.width);
+          calCanvas.width = Math.max(1, Math.floor(calImg.width * scale));
+          calCanvas.height = Math.max(1, Math.floor(calImg.height * scale));
+          calCtx.drawImage(calImg, 0, 0, calCanvas.width, calCanvas.height);
+          calHasImage = true;
+        };
+        calImg.src = String(reader.result || "");
       };
+      reader.readAsDataURL(file);
+    }
 
-      resultsDiv.appendChild(textDisplay);
-      resultsDiv.appendChild(backBtn);
-    };
+    function sampleAverageHexAtCanvas(canvas, x, y, radius) {
+      const ctx = canvas.getContext("2d", { willReadFrequently:true });
+      const r = clamp(radius, 1, 20);
+      const sx = clamp(Math.round(x - r), 0, canvas.width-1);
+      const sy = clamp(Math.round(y - r), 0, canvas.height-1);
+      const sw = clamp(Math.round(r*2+1), 1, canvas.width - sx);
+      const sh = clamp(Math.round(r*2+1), 1, canvas.height - sy);
 
-    document.getElementById('palette-size').onchange = (e) => {
-      selectedPaletteSize = parseInt(e.target.value, 10);
-      if (currentImageWithBg) {
-        document.getElementById('loading').classList.remove('hidden');
-        setTimeout(() => processImageForPalette(currentImageWithBg), 50);
+      const data = ctx.getImageData(sx, sy, sw, sh).data;
+      let R=0,G=0,B=0,count=0;
+
+      for (let i=0; i<data.length; i+=4) {
+        const a = data[i+3];
+        if (a < 32) continue;
+        R += data[i]; G += data[i+1]; B += data[i+2];
+        count++;
       }
-    };
+      if (!count) return { hex:"#000000", rgb:{r:0,g:0,b:0} };
+      const rr = Math.round(R/count);
+      const gg = Math.round(G/count);
+      const bb = Math.round(B/count);
+      return { hex: rgbToHex(rr,gg,bb), rgb:{r:rr,g:gg,b:bb} };
+    }
+
+    function renderCalBrandInventory() {
+      const key = document.getElementById("cal-brand").value;
+      const list = document.getElementById("brand-list");
+      const count = document.getElementById("brand-count");
+      const colors = inventory[key].colors || [];
+
+      count.textContent = colors.length + " paints";
+      list.innerHTML = "";
+
+      // show newest first
+      [...colors].slice().reverse().forEach((p, iRev) => {
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-white/5 transition border border-white/10";
+        row.innerHTML = `
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-xl border border-white/10" style="background:${p.hex}"></div>
+            <div class="min-w-0">
+              <div class="text-sm font-semibold truncate">${escapeHtml(p.name)}</div>
+              <div class="mono text-xs" style="color:var(--muted)">${escapeHtml(p.hex)}</div>
+            </div>
+          </div>
+          <button class="px-2 py-2 rounded-xl surface hover:bg-white/10 transition text-xs" data-del="${iRev}">Del</button>
+        `;
+        row.querySelector("button[data-del]")?.addEventListener("click", () => {
+          // delete by index from end
+          const realIndex = colors.length - 1 - iRev;
+          inventory[key].colors.splice(realIndex, 1);
+          saveInventory(inventory);
+          renderCalBrandInventory();
+          renderBrandToggles();
+        });
+        list.appendChild(row);
+      });
+    }
+
+    document.getElementById("cal-brand").addEventListener("change", () => renderCalBrandInventory());
+
+    calCanvas.addEventListener("mousemove", (e) => {
+      if (!calHasImage) return;
+      const rect = calCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      calCrosshair.classList.remove("hidden");
+      calCrosshair.style.left = x + "px";
+      calCrosshair.style.top = y + "px";
+    });
+
+    calCanvas.addEventListener("mouseleave", () => {
+      calCrosshair.classList.add("hidden");
+    });
+
+    calCanvas.addEventListener("click", (e) => {
+      if (!calHasImage) return;
+
+      const rect = calCanvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (calCanvas.width / rect.width);
+      const y = (e.clientY - rect.top) * (calCanvas.height / rect.height);
+
+      const radius = parseInt(document.getElementById("sample-radius").value, 10);
+      const sample = sampleAverageHexAtCanvas(calCanvas, x, y, radius);
+
+      document.getElementById("last-chip").style.background = sample.hex;
+      document.getElementById("last-hex").textContent = sample.hex;
+      document.getElementById("last-rgb").textContent = "(" + sample.rgb.r + "," + sample.rgb.g + "," + sample.rgb.b + ")";
+
+      const brandKey = document.getElementById("cal-brand").value;
+
+      const name = prompt("Paint name to add to " + inventory[brandKey].name + ":", "");
+      if (!name) return;
+
+      inventory[brandKey].colors.push({ name: name.trim(), hex: sample.hex.toUpperCase() });
+      saveInventory(inventory);
+
+      renderCalBrandInventory();
+      renderBrandToggles();
+      renderInventorySummary();
+    });
+
+    document.getElementById("wipe-brand").addEventListener("click", () => {
+      const key = document.getElementById("cal-brand").value;
+      const ok = confirm("Wipe all paints for " + inventory[key].name + "?");
+      if (!ok) return;
+      inventory[key].colors = [];
+      saveInventory(inventory);
+      renderCalBrandInventory();
+      renderBrandToggles();
+      renderInventorySummary();
+    });
+
+    document.getElementById("export-json").addEventListener("click", () => {
+      downloadJson("paint-inventory.json", inventory);
+    });
+
+    document.getElementById("download-all-json").addEventListener("click", () => {
+      downloadJson("paint-inventory.json", inventory);
+    });
+
+    document.getElementById("import-json").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(String(reader.result || "{}"));
+          inventory = mergeInventory(structuredClone(DEFAULT_INVENTORY), parsed);
+          saveInventory(inventory);
+          renderBrandToggles();
+          refreshCalibrateBrandList();
+          renderCalBrandInventory();
+          renderInventorySummary();
+          alert("Inventory imported.");
+        } catch {
+          alert("Could not import JSON. Make sure it is valid.");
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = "";
+    });
+
+    function downloadJson(filename, obj) {
+      const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    /* ------------------------------
+      INVENTORY SUMMARY VIEW
+    ------------------------------ */
+
+    function renderInventorySummary() {
+      const wrap = document.getElementById("inventory-summary");
+      if (!wrap) return;
+      wrap.innerHTML = "";
+
+      for (const [key, brand] of Object.entries(inventory)) {
+        const row = document.createElement("div");
+        row.className = "surface rounded-2xl p-3 border border-white/10";
+        row.innerHTML = `
+          <div class="flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-sm font-semibold truncate">${escapeHtml(brand.name)}</div>
+              <div class="text-xs" style="color:var(--muted)">${key}</div>
+            </div>
+            <div class="mono text-xs" style="color:var(--muted)">${(brand.colors||[]).length} paints</div>
+          </div>
+        `;
+        wrap.appendChild(row);
+      }
+    }
+    renderInventorySummary();
+
+    // Keep Calibrate list in sync on initial load
+    renderCalBrandInventory();
+
+    // Default view
+    showView("analyze");
   </script>
 </body>
 </html>
