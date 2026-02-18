@@ -47,35 +47,42 @@
   <style>body { box-sizing: border-box; }</style>
  </head>
  <body class="h-full gradient-bg overflow-auto">
-  <div id="app" class="h-full w-full flex flex-col"><!-- Header -->
+  <div id="app" class="h-full w-full flex flex-col">
+   <!-- Header -->
    <header class="flex-shrink-0 px-6 py-5 flex items-center justify-between border-b border-white/10">
     <div class="flex items-center gap-3">
      <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shadow-lg">
-      <svg class="w-5 h-5 text-white" fill="currentColor" viewbox="0 0 20 20"><path d="M5 3a2 2 0 00-2 2v6h16V5a2 2 0 00-2-2H5zm16 8H2v5a2 2 0 002 2h12a2 2 0 002-2v-5z" />
+      <svg class="w-5 h-5 text-white" fill="currentColor" viewbox="0 0 20 20">
+       <path d="M5 3a2 2 0 00-2 2v6h16V5a2 2 0 00-2-2H5zm16 8H2v5a2 2 0 002 2h12a2 2 0 002-2v-5z" />
       </svg>
      </div>
      <h1 id="app-title" class="text-xl font-semibold text-white">Paint Matcher</h1>
     </div>
-    <nav class="flex gap-2 bg-white/10 p-1 rounded-lg backdrop-blur">
-     <button id="tab-matcher" class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm transition-all tab-active">Color Matcher</button> <button id="tab-inventory" class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm text-white/70 hover:text-white hover:bg-white/10 transition-all">My Inventory</button> <button id="tab-buylist" class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm text-white/70 hover:text-white hover:bg-white/10 transition-all">Buy List</button>
+    <nav class="flex gap-2 bg-white/10 p-1 rounded-lg backdrop-blur"><button id="tab-matcher" class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm transition-all tab-active">Color Matcher</button> <button id="tab-inventory" class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm text-white/70 hover:text-white hover:bg-white/10 transition-all">My Inventory</button> <button id="tab-buylist" class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm text-white/70 hover:text-white hover:bg-white/10 transition-all">Buy List</button>
     </nav>
    </header><!-- Main Content -->
-   <main class="flex-1 px-6 pb-6 overflow-hidden"><!-- Color Matcher View -->
-    <div id="view-matcher" class="h-full flex gap-6"><!-- Left Panel - Image Upload & Analysis -->
+   <main class="flex-1 px-6 pb-6 overflow-hidden">
+    <!-- Color Matcher View -->
+    <div id="view-matcher" class="h-full flex gap-6">
+     <!-- Left Panel - Image Upload & Analysis -->
      <div class="flex-1 glass-card rounded-2xl p-6 flex flex-col overflow-hidden">
       <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
        <div class="w-1.5 h-1.5 bg-indigo-600 rounded-full"></div> Reference Image</h2><!-- Upload Zone (shown when no image) -->
-      <div id="upload-zone" class="flex-1 upload-zone rounded-xl flex flex-col items-center justify-center cursor-pointer"><label for="image-upload" class="cursor-pointer flex flex-col items-center">
+      <div id="upload-zone" class="flex-1 upload-zone rounded-xl flex flex-col items-center justify-center cursor-pointer">
+       <label for="image-upload" class="cursor-pointer flex flex-col items-center">
         <div class="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center mb-4">
-         <svg class="w-10 h-10 text-indigo-500" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+         <svg class="w-10 h-10 text-indigo-500" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
          </svg>
         </div><p class="text-indigo-600 font-medium text-lg mb-1">Upload your reference image</p><p class="text-gray-500 text-sm">Click or drag &amp; drop your miniature photo</p></label> <input type="file" id="image-upload" accept="image/*">
       </div><!-- Image Canvas (shown when image loaded) -->
       <div id="image-container" class="flex-1 relative rounded-xl overflow-hidden bg-gray-100 hidden">
        <canvas id="image-canvas" class="w-full h-full object-contain"></canvas>
        <div id="markers-container" class="absolute inset-0"></div><!-- Controls -->
-       <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center"><button id="add-marker-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition shadow-lg flex items-center gap-2">
-         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+       <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center">
+        <button id="add-marker-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition shadow-lg flex items-center gap-2">
+         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
          </svg> Add Color Point </button> <button id="clear-image-btn" class="px-4 py-2 bg-white/90 text-gray-700 rounded-lg font-medium text-sm hover:bg-white transition shadow-lg"> Change Image </button>
        </div>
       </div>
@@ -83,14 +90,17 @@
      <div class="w-96 glass-card rounded-2xl p-6 flex flex-col overflow-hidden">
       <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
        <div class="w-1.5 h-1.5 bg-purple-600 rounded-full"></div> Color Matches</h2>
-      <div class="flex items-center gap-2 mb-4"><button id="export-matches-btn" class="flex-shrink-0 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium text-xs hover:from-purple-600 hover:to-pink-600 transition shadow-lg flex items-center gap-2 hidden">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+      <div class="flex items-center gap-2 mb-4">
+       <button id="export-matches-btn" class="flex-shrink-0 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium text-xs hover:from-purple-600 hover:to-pink-600 transition shadow-lg flex items-center gap-2 hidden">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
         </svg> Export PDF </button>
       </div>
       <div id="color-matches" class="flex-1 overflow-y-auto scrollbar-thin space-y-4">
        <div class="text-center py-12 text-gray-400">
         <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-         <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+         <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
          </svg>
         </div>
         <p class="font-medium">No colors selected</p>
@@ -99,19 +109,25 @@
       </div>
      </div>
     </div><!-- Buy List View -->
-    <div id="view-buylist" class="h-full hidden flex flex-col gap-6 overflow-hidden"><!-- Add to Buy List Form -->
+    <div id="view-buylist" class="h-full hidden flex flex-col gap-6 overflow-hidden">
+     <!-- Add to Buy List Form -->
      <div class="glass-card rounded-2xl p-4 flex-shrink-0">
       <div class="flex gap-3 items-end flex-wrap">
-       <div class="flex-1 min-w-48"><label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Brand</label> <select id="buylist-paint-brand" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm"> <option value="citadel">Citadel</option> <option value="vallejo">Vallejo</option> <option value="army_painter">Army Painter</option> <option value="pro_acryl">Pro Acryl</option> </select>
+       <div class="flex-1 min-w-48">
+        <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Brand</label> <select id="buylist-paint-brand" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm"> <option value="citadel">Citadel</option> <option value="vallejo">Vallejo</option> <option value="army_painter">Army Painter</option> <option value="pro_acryl">Pro Acryl</option> </select>
        </div>
-       <div class="flex-1 min-w-48"><label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Paint Name</label> <input type="text" id="buylist-paint-name" placeholder="e.g., Mephiston Red" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm">
+       <div class="flex-1 min-w-48">
+        <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Paint Name</label> <input type="text" id="buylist-paint-name" placeholder="e.g., Mephiston Red" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm">
        </div>
-       <div class="w-24"><label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Color</label>
-        <div class="flex gap-2 items-center"><input type="color" id="buylist-paint-color" value="#c21f30" class="w-12 h-10 rounded-lg border border-gray-200 cursor-pointer">
+       <div class="w-24">
+        <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Color</label>
+        <div class="flex gap-2 items-center">
+         <input type="color" id="buylist-paint-color" value="#c21f30" class="w-12 h-10 rounded-lg border border-gray-200 cursor-pointer">
          <div id="buylist-color-preview" class="w-12 h-10 rounded-lg border-2 border-gray-200 shadow-inner" style="background-color: #c21f30"></div>
         </div>
        </div><button id="add-buylist-btn" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium text-sm hover:from-indigo-700 hover:to-purple-700 transition shadow-lg flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg> Add to Buy List </button>
       </div>
      </div><!-- Buy List Grid -->
@@ -121,11 +137,13 @@
         <div class="w-1.5 h-1.5 bg-purple-600 rounded-full"></div> Items to Buy <span id="buylist-count" class="text-sm font-normal text-gray-500">(0 items)</span></h2>
       </div>
       <div id="buylist-grid" class="flex-1 overflow-y-auto scrollbar-thin">
-       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"><!-- Buy list items will be inserted here -->
+       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+        <!-- Buy list items will be inserted here -->
        </div>
        <div id="empty-buylist" class="text-center py-16 text-gray-400">
         <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-         <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+         <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
          </svg>
         </div>
         <p class="font-medium text-lg">Your buy list is empty</p>
@@ -134,14 +152,18 @@
       </div>
      </div>
     </div><!-- Inventory View -->
-    <div id="view-inventory" class="h-full hidden flex flex-col gap-6 overflow-hidden"><!-- Brand Filter & Search -->
+    <div id="view-inventory" class="h-full hidden flex flex-col gap-6 overflow-hidden">
+     <!-- Brand Filter & Search -->
      <div class="glass-card rounded-2xl p-4 flex-shrink-0">
       <div class="flex flex-wrap gap-3 items-center justify-between">
-       <div class="flex gap-2 flex-wrap"><button data-brand="all" class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white">All Brands</button> <button data-brand="citadel" class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Citadel</button> <button data-brand="vallejo" class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Vallejo</button> <button data-brand="army_painter" class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Army Painter</button> <button data-brand="pro_acryl" class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Pro Acryl</button>
+       <div class="flex gap-2 flex-wrap">
+        <button data-brand="all" class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white">All Brands</button> <button data-brand="citadel" class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Citadel</button> <button data-brand="vallejo" class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Vallejo</button> <button data-brand="army_painter" class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Army Painter</button> <button data-brand="pro_acryl" class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Pro Acryl</button>
        </div>
        <div class="flex gap-2">
-        <div class="relative"><input type="text" id="search-paints" placeholder="Search paints..." class="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm w-64">
-         <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        <div class="relative">
+         <input type="text" id="search-paints" placeholder="Search paints..." class="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm w-64">
+         <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
          </svg>
         </div><button id="show-owned-only" class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"> <span id="owned-toggle-icon">☐</span> Owned Only </button>
        </div>
@@ -149,15 +171,20 @@
      </div><!-- Quick Add Paint -->
      <div class="glass-card rounded-2xl p-4 flex-shrink-0">
       <div class="flex gap-3 items-end flex-wrap">
-       <div class="flex-1 min-w-48"><label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Brand</label> <select id="new-paint-brand" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm"> <option value="citadel">Citadel</option> <option value="vallejo">Vallejo</option> <option value="army_painter">Army Painter</option> <option value="pro_acryl">Pro Acryl</option> </select>
+       <div class="flex-1 min-w-48">
+        <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Brand</label> <select id="new-paint-brand" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm"> <option value="citadel">Citadel</option> <option value="vallejo">Vallejo</option> <option value="army_painter">Army Painter</option> <option value="pro_acryl">Pro Acryl</option> </select>
        </div>
-       <div class="flex-1 min-w-48"><label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Paint Name</label> <input type="text" id="new-paint-name" placeholder="e.g., Mephiston Red" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm">
+       <div class="flex-1 min-w-48">
+        <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Paint Name</label> <input type="text" id="new-paint-name" placeholder="e.g., Mephiston Red" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm">
        </div>
-       <div class="w-24"><label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Color</label> <input type="color" id="new-paint-color" value="#c21f30" class="w-full h-10 rounded-lg border border-gray-200 cursor-pointer">
+       <div class="w-24">
+        <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Color</label> <input type="color" id="new-paint-color" value="#c21f30" class="w-full h-10 rounded-lg border border-gray-200 cursor-pointer">
        </div>
-       <div class="w-20"><label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Qty</label> <input type="number" id="new-paint-qty" value="1" min="1" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm">
+       <div class="w-20">
+        <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Qty</label> <input type="number" id="new-paint-qty" value="1" min="1" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm">
        </div><button id="add-paint-btn" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium text-sm hover:from-indigo-700 hover:to-purple-700 transition shadow-lg flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg> Add to Inventory </button>
       </div>
      </div><!-- Paint Inventory Grid -->
@@ -165,15 +192,18 @@
       <div class="flex justify-between items-center mb-4 flex-shrink-0">
        <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
         <div class="w-1.5 h-1.5 bg-amber-500 rounded-full"></div> My Paint Collection <span id="paint-count" class="text-sm font-normal text-gray-500">(0 paints)</span></h2>
-       <div class="flex items-center gap-2 text-sm text-gray-500"><span id="inventory-stats">0 owned</span>
+       <div class="flex items-center gap-2 text-sm text-gray-500">
+        <span id="inventory-stats">0 owned</span>
        </div>
       </div>
       <div id="inventory-grid" class="flex-1 overflow-y-auto scrollbar-thin">
-       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"><!-- Paint cards will be inserted here -->
+       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+        <!-- Paint cards will be inserted here -->
        </div>
        <div id="empty-inventory" class="text-center py-16 text-gray-400">
         <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-         <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+         <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
          </svg>
         </div>
         <p class="font-medium text-lg">Your inventory is empty</p>
@@ -182,19 +212,25 @@
       </div>
      </div>
     </div><!-- Buy List View -->
-    <div id="view-buylist" class="h-full hidden flex flex-col gap-6 overflow-hidden"><!-- Add to Buy List Form -->
+    <div id="view-buylist" class="h-full hidden flex flex-col gap-6 overflow-hidden">
+     <!-- Add to Buy List Form -->
      <div class="glass-card rounded-2xl p-4 flex-shrink-0">
       <div class="flex gap-3 items-end flex-wrap">
-       <div class="flex-1 min-w-48"><label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Brand</label> <select id="buylist-paint-brand" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm"> <option value="citadel">Citadel</option> <option value="vallejo">Vallejo</option> <option value="army_painter">Army Painter</option> <option value="pro_acryl">Pro Acryl</option> </select>
+       <div class="flex-1 min-w-48">
+        <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Brand</label> <select id="buylist-paint-brand" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm"> <option value="citadel">Citadel</option> <option value="vallejo">Vallejo</option> <option value="army_painter">Army Painter</option> <option value="pro_acryl">Pro Acryl</option> </select>
        </div>
-       <div class="flex-1 min-w-48"><label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Paint Name</label> <input type="text" id="buylist-paint-name" placeholder="e.g., Mephiston Red" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm">
+       <div class="flex-1 min-w-48">
+        <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Paint Name</label> <input type="text" id="buylist-paint-name" placeholder="e.g., Mephiston Red" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm">
        </div>
-       <div class="w-24"><label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Color</label>
-        <div class="flex gap-2 items-center"><input type="color" id="buylist-paint-color" value="#c21f30" class="w-12 h-10 rounded-lg border border-gray-200 cursor-pointer">
+       <div class="w-24">
+        <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Color</label>
+        <div class="flex gap-2 items-center">
+         <input type="color" id="buylist-paint-color" value="#c21f30" class="w-12 h-10 rounded-lg border border-gray-200 cursor-pointer">
          <div id="buylist-color-preview" class="w-12 h-10 rounded-lg border-2 border-gray-200 shadow-inner" style="background-color: #c21f30"></div>
         </div>
        </div><button id="add-buylist-btn" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium text-sm hover:from-indigo-700 hover:to-purple-700 transition shadow-lg flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg> Add to Buy List </button>
       </div>
      </div><!-- Buy List Grid -->
@@ -204,11 +240,13 @@
         <div class="w-1.5 h-1.5 bg-purple-600 rounded-full"></div> Items to Buy <span id="buylist-count" class="text-sm font-normal text-gray-500">(0 items)</span></h2>
       </div>
       <div id="buylist-grid" class="flex-1 overflow-y-auto scrollbar-thin">
-       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"><!-- Buy list items will be inserted here -->
+       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+        <!-- Buy list items will be inserted here -->
        </div>
        <div id="empty-buylist" class="text-center py-16 text-gray-400">
         <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-         <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+         <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
          </svg>
         </div>
         <p class="font-medium text-lg">Your buy list is empty</p>
@@ -1075,14 +1113,23 @@
 
     function updateBrandFilter() {
       document.querySelectorAll('.brand-pill').forEach(btn => {
+        btn.removeEventListener('click', handleBrandClick);
+        btn.addEventListener('click', handleBrandClick);
+        
         if (btn.dataset.brand === selectedBrand) {
-          btn.classList.remove('bg-gray-100', 'text-gray-700');
+          btn.classList.remove('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
           btn.classList.add('bg-indigo-600', 'text-white');
         } else {
           btn.classList.remove('bg-indigo-600', 'text-white');
-          btn.classList.add('bg-gray-100', 'text-gray-700');
+          btn.classList.add('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
         }
       });
+    }
+
+    function handleBrandClick(e) {
+      selectedBrand = e.target.dataset.brand;
+      updateBrandFilter();
+      renderInventory();
     }
 
     async function addPaintToInventory() {
@@ -1395,75 +1442,84 @@
     }
 
     function exportMatchesToPDF() {
-      // Collect all matches from current color markers
+      if (!window.html2pdf) {
+        showToast('PDF library not loaded. Please refresh and try again.', 'error');
+        return;
+      }
+
       const matchesData = colorMarkers.map((marker, idx) => {
         const matches = findClosestPaints(marker.color);
         return { marker: idx + 1, color: marker.color, matches };
       });
 
-      // Create PDF content
-      const element = document.createElement('div');
-      element.style.width = '210mm';
-      element.style.padding = '20mm';
-      element.style.fontFamily = 'Outfit, Arial, sans-serif';
-      element.style.backgroundColor = '#ffffff';
-      element.innerHTML = `
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="font-size: 32px; font-weight: bold; color: #1e1b4b; margin: 0; margin-bottom: 10px;">🎨 Paint Matcher Report</h1>
-          <p style="color: #666; font-size: 14px; margin: 0;">${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-        </div>
+      const htmlContent = `
+        <div style="width: 210mm; padding: 20mm; font-family: Arial, sans-serif; background-color: #ffffff;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="font-size: 28px; font-weight: bold; color: #1e1b4b; margin: 0 0 10px 0;">Paint Matcher Report</h1>
+            <p style="color: #666; font-size: 14px; margin: 0;">${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          </div>
 
-        <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-          <h2 style="font-size: 18px; font-weight: 600; color: #1e1b4b; margin: 0 0 15px 0;">📋 Summary</h2>
-          <p style="margin: 8px 0; color: #374151; font-size: 14px;"><strong>Total Colors Found:</strong> ${colorMarkers.length}</p>
-          <p style="margin: 8px 0; color: #374151; font-size: 14px;"><strong>Total Paint Matches:</strong> ${matchesData.reduce((sum, d) => sum + d.matches.length, 0)}</p>
-          <p style="margin: 8px 0; color: #374151; font-size: 14px;"><strong>Brands Included:</strong> Citadel, Vallejo, Army Painter, Pro Acryl</p>
-        </div>
+          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+            <h2 style="font-size: 18px; font-weight: 600; color: #1e1b4b; margin: 0 0 15px 0;">Summary</h2>
+            <p style="margin: 8px 0; color: #374151; font-size: 14px;"><strong>Total Colors:</strong> ${colorMarkers.length}</p>
+            <p style="margin: 8px 0; color: #374151; font-size: 14px;"><strong>Total Matches:</strong> ${matchesData.reduce((sum, d) => sum + d.matches.length, 0)}</p>
+            <p style="margin: 8px 0; color: #374151; font-size: 14px;"><strong>Brands:</strong> Citadel, Vallejo, Army Painter, Pro Acryl</p>
+          </div>
 
-        ${matchesData.map((data, idx) => `
-          <div style="page-break-inside: avoid; margin-bottom: 25px;">
-            <div style="display: flex; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
-              <div style="width: 40px; height: 40px; background-color: ${data.color}; border-radius: 6px; border: 2px solid #d1d5db; margin-right: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
-              <div>
-                <h3 style="font-size: 16px; font-weight: 600; color: #1e1b4b; margin: 0;">Color Point ${data.marker}</h3>
-                <p style="font-size: 12px; color: #666; margin: 4px 0 0 0; font-family: monospace;">${data.color.toUpperCase()}</p>
+          ${matchesData.map((data, idx) => `
+            <div style="margin-bottom: 25px; page-break-inside: avoid;">
+              <div style="display: flex; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                <div style="width: 40px; height: 40px; background-color: ${data.color}; border-radius: 6px; border: 2px solid #d1d5db; margin-right: 15px;"></div>
+                <div>
+                  <h3 style="font-size: 16px; font-weight: 600; color: #1e1b4b; margin: 0;">Color Point ${data.marker}</h3>
+                  <p style="font-size: 12px; color: #666; margin: 4px 0 0 0; font-family: monospace;">${data.color.toUpperCase()}</p>
+                </div>
+              </div>
+              <div style="margin-left: 55px;">
+                ${data.matches.map((match, mIdx) => `
+                  <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: #f9fafb; border-radius: 6px; border-left: 3px solid #6366f1;">
+                    <div style="width: 28px; height: 28px; background-color: ${match.hex}; border-radius: 4px; margin-right: 12px; border: 1px solid #d1d5db;"></div>
+                    <div style="flex: 1;">
+                      <div style="font-weight: 600; color: #1f2937; font-size: 13px;">${match.name}</div>
+                      <div style="color: #6b7280; font-size: 11px; margin-top: 2px;">${formatBrandName(match.brand)} - ${match.hex}</div>
+                    </div>
+                    <div style="background: #6366f1; color: white; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 12px; min-width: 35px; text-align: center;">${match.distance}%</div>
+                  </div>
+                `).join('')}
               </div>
             </div>
-            <div style="margin-left: 55px;">
-              ${data.matches.map((match, mIdx) => `
-                <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: #f9fafb; border-radius: 6px; border-left: 3px solid #6366f1;">
-                  <div style="width: 28px; height: 28px; background-color: ${match.hex}; border-radius: 4px; margin-right: 12px; border: 1px solid #d1d5db; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"></div>
-                  <div style="flex: 1;">
-                    <div style="font-weight: 600; color: #1f2937; font-size: 13px;">${match.name}</div>
-                    <div style="color: #6b7280; font-size: 11px; margin-top: 2px;">${formatBrandName(match.brand)} • ${match.hex}</div>
-                  </div>
-                  <div style="background: #6366f1; color: white; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 12px; text-align: center; min-width: 35px;">${match.distance}%</div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        `).join('')}
+          `).join('')}
 
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; font-size: 12px; color: #9ca3af;">
-          <p style="margin: 0;">Generated by Paint Matcher • ${new Date().toLocaleTimeString()}</p>
+          <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; font-size: 11px; color: #9ca3af;">
+            <p style="margin: 0;">Generated by Paint Matcher - ${new Date().toLocaleTimeString()}</p>
+          </div>
         </div>
       `;
 
-      // Generate PDF using html2pdf
-      const opt = {
-        margin: 0,
-        filename: `paint-matches-${new Date().toISOString().split('T')[0]}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
+      try {
+        const opt = {
+          margin: [0, 0, 0, 0],
+          filename: `paint-matches-${new Date().toISOString().split('T')[0]}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
 
-      html2pdf().set(opt).from(element).save();
-      showToast('PDF exported successfully! 🎉', 'success');
+        window.html2pdf().set(opt).from(htmlContent).html2canvas.then(canvas => {
+          window.html2pdf().from(htmlContent).set(opt).save();
+          showToast('PDF exported successfully! 🎉', 'success');
+        }).catch(err => {
+          console.error('PDF generation error:', err);
+          showToast('Error generating PDF. Please try again.', 'error');
+        });
+      } catch (err) {
+        console.error('PDF error:', err);
+        showToast('Error generating PDF. Please try again.', 'error');
+      }
     }
 
     // Initialize
     initApp();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d0020849020bea9',t:'MTc3MTQ0NDk5Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d00238fb4e2bea9',t:'MTc3MTQ0NTEyMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
