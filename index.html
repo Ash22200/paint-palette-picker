@@ -4,197 +4,293 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Paint Palette Picker</title>
+
 <script src="https://cdn.tailwindcss.com"></script>
+
 <style>
-body { background:#0f172a; color:white; }
+body {
+  background: radial-gradient(circle at top, #1e293b 0%, #0f172a 60%, #000 100%);
+  color:white;
+}
 .marker {
-  width:20px;
-  height:20px;
-  border:3px solid white;
+  width:22px;
+  height:22px;
+  border:4px solid white;
   border-radius:50%;
   position:absolute;
+  transform:translate(-50%, -50%);
   cursor:pointer;
+  box-shadow:0 0 12px rgba(0,0,0,0.6);
 }
+.marker:hover { transform:translate(-50%, -50%) scale(1.2); }
 </style>
 </head>
-<body class="p-6">
+<body class="p-8">
 
-<h1 class="text-3xl font-bold mb-6">Paint Palette Picker</h1>
+<header class="text-center mb-16">
+  <h1 class="text-6xl font-extrabold bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
+    Paint Palette Picker
+  </h1>
+  <p class="text-slate-300 mt-4 text-lg">
+    Extract intelligent miniature paint matches from any image.
+  </p>
+</header>
 
-<input type="file" id="imageInput" accept="image/*" class="mb-4">
+<div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12">
 
-<div class="flex gap-6 flex-wrap">
-  <div class="relative">
-    <img id="imagePreview" class="max-w-md border border-white/20 rounded">
-    <div id="markerLayer" class="absolute inset-0"></div>
+  <!-- IMAGE SIDE -->
+  <div>
+    <input type="file" id="imageInput" accept="image/*"
+      class="mb-6 block">
+
+    <div class="relative border border-slate-700 rounded-2xl overflow-hidden shadow-2xl bg-black">
+      <img id="modelImg" class="w-full select-none">
+      <div id="markerLayer" class="absolute inset-0"></div>
+    </div>
+
+    <div class="mt-4 flex gap-4">
+      <button onclick="autoExtract()"
+        class="px-5 py-3 rounded-xl bg-pink-600 hover:bg-pink-500">
+        Auto Extract
+      </button>
+
+      <label class="flex items-center gap-2 text-sm">
+        <input type="checkbox" id="ownedOnly">
+        Only Owned
+      </label>
+    </div>
   </div>
 
-  <div class="w-96">
-    <h2 class="text-xl mb-2">Extracted Colors</h2>
-    <div id="palette"></div>
+  <!-- RESULTS SIDE -->
+  <div>
 
-    <h2 class="text-xl mt-6 mb-2">Matches</h2>
-    <div id="matches"></div>
+    <h2 class="text-2xl mb-4">Extracted Palette</h2>
+    <div id="paletteGrid" class="grid grid-cols-2 gap-4 mb-10"></div>
+
+    <h2 class="text-2xl mb-4">Closest Matches</h2>
+    <div id="matchesList" class="space-y-4"></div>
+
   </div>
+
 </div>
 
 <script>
-// ===============================
+
+// =============================
 // Paint Database
-// ===============================
+// =============================
 
 const paints = [
-  {id:"citadel_abaddon", brand:"Citadel", name:"Abaddon Black", hex:"#231F20"},
-  {id:"citadel_mephiston", brand:"Citadel", name:"Mephiston Red", hex:"#9A1115"},
-  {id:"citadel_naggaroth", brand:"Citadel", name:"Naggaroth Night", hex:"#3D3354"},
-
+  {id:"cit_abaddon", brand:"Citadel", name:"Abaddon Black", hex:"#231F20"},
+  {id:"cit_mephiston", brand:"Citadel", name:"Mephiston Red", hex:"#9A1115"},
+  {id:"cit_naggaroth", brand:"Citadel", name:"Naggaroth Night", hex:"#3D3354"},
   {id:"ap_warlock", brand:"Army Painter", name:"Warlock Purple", hex:"#5A2A56"},
   {id:"ap_uniform", brand:"Army Painter", name:"Uniform Grey", hex:"#5E6366"},
-
-  {id:"pro_boldred", brand:"Pro Acryl", name:"Bold Pyrrole Red", hex:"#C11B1B"},
   {id:"pro_blue", brand:"Pro Acryl", name:"Blue", hex:"#2F5DA8"},
-
-  {id:"vallejo_black", brand:"Vallejo", name:"Black", hex:"#1C1C1C"},
-  {id:"vallejo_white", brand:"Vallejo", name:"White", hex:"#F5F5F5"}
+  {id:"val_black", brand:"Vallejo", name:"Black", hex:"#1C1C1C"},
+  {id:"val_white", brand:"Vallejo", name:"White", hex:"#F5F5F5"}
 ];
 
-// ===============================
-// Owned Paint System
-// ===============================
+// =============================
+// Owned System
+// =============================
 
-let owned = new Set(JSON.parse(localStorage.getItem("owned") || "[]"));
-
-function toggleOwned(id) {
-  if (owned.has(id)) owned.delete(id);
+let owned = new Set(JSON.parse(localStorage.getItem("owned")||"[]"));
+function toggleOwned(id){
+  if(owned.has(id)) owned.delete(id);
   else owned.add(id);
-  localStorage.setItem("owned", JSON.stringify([...owned]));
+  localStorage.setItem("owned",JSON.stringify([...owned]));
 }
 
-// ===============================
-// Image + Palette
-// ===============================
+// =============================
+// Image Handling
+// =============================
 
 const imageInput = document.getElementById("imageInput");
-const imagePreview = document.getElementById("imagePreview");
+const modelImg = document.getElementById("modelImg");
 const markerLayer = document.getElementById("markerLayer");
-const paletteDiv = document.getElementById("palette");
-const matchesDiv = document.getElementById("matches");
 
 let palette = [];
 
-imageInput.addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    imagePreview.src = reader.result;
-  };
-  reader.readAsDataURL(file);
+imageInput.addEventListener("change", e=>{
+  const reader=new FileReader();
+  reader.onload=()=> modelImg.src=reader.result;
+  reader.readAsDataURL(e.target.files[0]);
 });
 
-imagePreview.onload = () => {
-  extractColors();
-};
+modelImg.onload=()=> initializeMarkers(5);
 
-function extractColors() {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  canvas.width = imagePreview.naturalWidth;
-  canvas.height = imagePreview.naturalHeight;
-  ctx.drawImage(imagePreview, 0, 0);
-
-  const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
-  const data = imageData.data;
-
-  palette = [];
-
-  for (let i=0; i<data.length; i+=10000) {
-    const r = data[i];
-    const g = data[i+1];
-    const b = data[i+2];
-    palette.push(rgbToHex(r,g,b));
-    if (palette.length >= 5) break;
-  }
-
-  renderPalette();
-  renderMarkers();
-  renderMatches();
-}
-
-function rgbToHex(r,g,b){
-  return "#" + [r,g,b].map(x=>x.toString(16).padStart(2,"0")).join("").toUpperCase();
-}
-
-// ===============================
+// =============================
 // Markers
-// ===============================
+// =============================
 
-function renderMarkers(){
-  markerLayer.innerHTML = "";
-  palette.forEach((color,i)=>{
-    const marker = document.createElement("div");
-    marker.className="marker";
-    marker.style.background=color;
-    marker.style.left=(Math.random()*300)+"px";
-    marker.style.top=(Math.random()*300)+"px";
-    markerLayer.appendChild(marker);
+function initializeMarkers(count){
+  markerLayer.innerHTML="";
+  palette=[];
+  for(let i=0;i<count;i++){
+    const m=document.createElement("div");
+    m.className="marker";
+    m.style.left=(20+i*15)+"%";
+    m.style.top=(30+i*10)+"%";
+    markerLayer.appendChild(m);
+    enableDrag(m);
+    sampleColor(m);
+  }
+}
+
+function enableDrag(marker){
+  marker.addEventListener("pointerdown", e=>{
+    marker.setPointerCapture(e.pointerId);
+    marker.onpointermove=ev=>{
+      const rect=modelImg.getBoundingClientRect();
+      let x=ev.clientX-rect.left;
+      let y=ev.clientY-rect.top;
+      x=Math.max(0,Math.min(rect.width,x));
+      y=Math.max(0,Math.min(rect.height,y));
+      marker.style.left=(x/rect.width*100)+"%";
+      marker.style.top=(y/rect.height*100)+"%";
+      sampleColor(marker);
+    };
+    marker.onpointerup=()=>marker.onpointermove=null;
   });
 }
 
-// ===============================
-// Matching
-// ===============================
+function sampleColor(marker){
+  const canvas=document.createElement("canvas");
+  const ctx=canvas.getContext("2d");
+  canvas.width=modelImg.naturalWidth;
+  canvas.height=modelImg.naturalHeight;
+  ctx.drawImage(modelImg,0,0);
+
+  const rect=modelImg.getBoundingClientRect();
+  const px=parseFloat(marker.style.left)/100;
+  const py=parseFloat(marker.style.top)/100;
+
+  const realX=Math.floor(px*modelImg.naturalWidth);
+  const realY=Math.floor(py*modelImg.naturalHeight);
+
+  const pixel=ctx.getImageData(realX,realY,1,1).data;
+  const hex=rgbToHex(pixel[0],pixel[1],pixel[2]);
+  marker.style.background=hex;
+
+  updatePalette();
+}
+
+function updatePalette(){
+  palette=[];
+  document.querySelectorAll(".marker").forEach(m=>palette.push(m.style.background));
+  renderPalette();
+  renderMatches();
+}
+
+// =============================
+// Palette Rendering
+// =============================
 
 function renderPalette(){
-  paletteDiv.innerHTML="";
-  palette.forEach(c=>{
-    paletteDiv.innerHTML+=`
-      <div class="flex items-center gap-2 mb-2">
-        <div class="w-6 h-6 rounded" style="background:${c}"></div>
-        <span>${c}</span>
+  const grid=document.getElementById("paletteGrid");
+  grid.innerHTML="";
+  palette.forEach(hex=>{
+    grid.innerHTML+=`
+      <div class="flex items-center gap-3 p-4 bg-slate-800 rounded-xl border border-slate-700">
+        <div class="w-8 h-8 rounded-lg" style="background:${hex}"></div>
+        <span class="font-mono">${hex}</span>
       </div>
     `;
   });
 }
 
+// =============================
+// Matching
+// =============================
+
 function renderMatches(){
-  matchesDiv.innerHTML="";
-  const used = new Set();
+  const list=document.getElementById("matchesList");
+  list.innerHTML="";
+  const used=new Set();
+  const ownedOnly=document.getElementById("ownedOnly").checked;
 
   palette.forEach(color=>{
-    const best = paints
-      .map(p=>({...p, score:colorDistance(color,p.hex)}))
+    const matches=paints
+      .map(p=>({...p,score:deltaE(color,p.hex)}))
       .sort((a,b)=>a.score-b.score)
       .filter(p=>!used.has(p.id))
+      .filter(p=>!ownedOnly || owned.has(p.id))
       .slice(0,3);
 
-    best.forEach(p=>{
+    matches.forEach(p=>{
       used.add(p.id);
-      matchesDiv.innerHTML+=`
-        <div class="border border-white/20 p-2 mb-2 rounded">
+      list.innerHTML+=`
+        <div class="p-4 bg-slate-800 rounded-xl border border-slate-700">
           <div class="flex justify-between">
             <span>${p.name}</span>
             <input type="checkbox"
               ${owned.has(p.id)?"checked":""}
               onchange="toggleOwned('${p.id}')">
           </div>
-          <div class="text-sm text-gray-400">${p.brand}</div>
+          <div class="text-sm text-slate-400">${p.brand}</div>
         </div>
       `;
     });
   });
 }
 
-function colorDistance(a,b){
-  const ar = parseInt(a.slice(1,3),16);
-  const ag = parseInt(a.slice(3,5),16);
-  const ab = parseInt(a.slice(5,7),16);
+// =============================
+// DeltaE Color Distance
+// =============================
 
-  const br = parseInt(b.slice(1,3),16);
-  const bg = parseInt(b.slice(3,5),16);
-  const bb = parseInt(b.slice(5,7),16);
+function deltaE(hexA,hexB){
+  const a=hexToLab(hexA);
+  const b=hexToLab(hexB);
+  return Math.sqrt(
+    (a.L-b.L)**2 +
+    (a.a-b.a)**2 +
+    (a.b-b.b)**2
+  );
+}
 
-  return Math.sqrt((ar-br)**2+(ag-bg)**2+(ab-bb)**2);
+function hexToLab(hex){
+  const {r,g,b}=hexToRgb(hex);
+  return xyzToLab(rgbToXyz(r,g,b));
+}
+
+function hexToRgb(hex){
+  return {
+    r:parseInt(hex.substr(1,2),16),
+    g:parseInt(hex.substr(3,2),16),
+    b:parseInt(hex.substr(5,2),16)
+  };
+}
+
+function rgbToXyz(r,g,b){
+  r/=255; g/=255; b/=255;
+  r=r>0.04045?((r+0.055)/1.055)**2.4:r/12.92;
+  g=g>0.04045?((g+0.055)/1.055)**2.4:g/12.92;
+  b=b>0.04045?((b+0.055)/1.055)**2.4:b/12.92;
+
+  return {
+    x:(r*0.4124+g*0.3576+b*0.1805)/0.95047,
+    y:(r*0.2126+g*0.7152+b*0.0722)/1.00000,
+    z:(r*0.0193+g*0.1192+b*0.9505)/1.08883
+  };
+}
+
+function xyzToLab({x,y,z}){
+  const f=t=>t>0.008856?Math.cbrt(t):(7.787*t)+(16/116);
+  const fx=f(x), fy=f(y), fz=f(z);
+  return {
+    L:(116*fy)-16,
+    a:500*(fx-fy),
+    b:200*(fy-fz)
+  };
+}
+
+function rgbToHex(r,g,b){
+  return "#" + [r,g,b].map(x=>x.toString(16).padStart(2,"0")).join("").toUpperCase();
+}
+
+function autoExtract(){
+  initializeMarkers(5);
 }
 
 </script>
