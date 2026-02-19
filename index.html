@@ -155,6 +155,7 @@
               Color Matches
             </h2>
 
+            <!-- Action row -->
             <div class="flex items-center gap-2 mb-4">
               <button id="export-matches-btn"
                 class="flex-shrink-0 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium text-xs hover:from-purple-600 hover:to-pink-600 transition shadow-lg flex items-center gap-2 hidden">
@@ -163,6 +164,15 @@
                     d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
                 Export PDF
+              </button>
+
+              <button id="add-all-buylist-btn"
+                class="flex-shrink-0 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium text-xs hover:from-indigo-700 hover:to-purple-700 transition shadow-lg flex items-center gap-2 hidden">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 7h13M10 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z" />
+                </svg>
+                Add All to Buy List
               </button>
             </div>
 
@@ -223,6 +233,10 @@
 
               <button id="test-clear-paint-btn" class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-50 transition shadow">
                 Clear Paint
+              </button>
+
+              <button id="test-advanced-btn" class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-50 transition shadow">
+                Advanced
               </button>
             </div>
 
@@ -437,6 +451,63 @@
           </div>
         </div>
       </main>
+    </div>
+
+    <!-- Advanced Modal (keeps UI clean/premium) -->
+    <div id="advanced-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-adv-close="1"></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 glass-card">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold text-gray-800">Advanced Paint Settings</h3>
+          <button data-adv-close="1" class="text-gray-500 hover:text-gray-700 font-medium">✕</button>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">Blend Mode</label>
+            <select id="test-blend-mode" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm">
+              <option value="source-over">Normal</option>
+              <option value="multiply">Multiply</option>
+              <option value="overlay">Overlay</option>
+              <option value="screen">Screen</option>
+              <option value="soft-light">Soft Light</option>
+              <option value="hard-light">Hard Light</option>
+              <option value="color">Color</option>
+              <option value="luminosity">Luminosity</option>
+            </select>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Brush Hardness</label>
+              <span id="hardness-label" class="text-xs text-gray-500 font-mono">70%</span>
+            </div>
+            <input id="brush-hardness" type="range" min="0" max="100" value="70" class="w-full" />
+            <p class="text-xs text-gray-500 mt-1">Lower = softer feathered edges (better glazing).</p>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Conversion Mode</label>
+              <span id="conv-label" class="text-xs text-gray-500 font-mono">OFF</span>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+              <button id="conv-off" class="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">Off</button>
+              <button data-conv="citadel" class="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">Citadel</button>
+              <button data-conv="vallejo" class="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">Vallejo</button>
+              <button data-conv="army_painter" class="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">Army Painter</button>
+              <button data-conv="pro_acryl" class="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">Pro Acryl</button>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">For pitching: forces matches + recipes to one brand.</p>
+          </div>
+        </div>
+
+        <div class="mt-5 flex justify-end">
+          <button data-adv-close="1" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition shadow-lg">
+            Done
+          </button>
+        </div>
+      </div>
     </div>
 
     <script>
@@ -767,6 +838,12 @@
       let isPainting = false;
       let lastPt = null;
 
+      // Sellability features
+      let conversionBrand = null;         // null = multi brand; else single brand
+      let recipeOpenByMarkerId = {};      // { [markerId]: true/false }
+      let testBlendMode = 'source-over';  // canvas globalCompositeOperation
+      let brushHardness = 70;             // 0..100
+
       /******************************************************************
        * CONFIG (Canva SDK optional)
        ******************************************************************/
@@ -799,8 +876,6 @@
           if (window.dataSdk && typeof window.dataSdk.init === 'function') {
             const result = await window.dataSdk.init({
               onDataChanged: (data) => {
-                // IMPORTANT FIX:
-                // Keep ALL paints in inventory, not only owned.
                 const paints = data.filter(p => p.type === 'paint');
                 const buys = data.filter(p => p.type === 'buylist');
 
@@ -810,6 +885,7 @@
                 renderInventory();
                 renderBuylist();
                 refreshTestInventoryPicker();
+                updateColorMatches();
               }
             });
 
@@ -828,6 +904,7 @@
           renderInventory();
           renderBuylist();
           refreshTestInventoryPicker();
+          updateColorMatches();
         },
 
         _readLocal() {
@@ -842,6 +919,7 @@
           renderInventory();
           renderBuylist();
           refreshTestInventoryPicker();
+          updateColorMatches();
         },
 
         async create(obj) {
@@ -950,6 +1028,7 @@
         document.getElementById('add-marker-btn').addEventListener('click', addColorMarker);
         document.getElementById('clear-image-btn').addEventListener('click', clearImage);
         document.getElementById('export-matches-btn').addEventListener('click', exportMatchesToPDF);
+        document.getElementById('add-all-buylist-btn').addEventListener('click', addAllMatchesToBuylist);
 
         // Inventory filters
         document.querySelectorAll('.brand-pill').forEach(btn => btn.addEventListener('click', handleBrandClick));
@@ -1008,11 +1087,51 @@
         stage.addEventListener('mousedown', testStartPaint);
         window.addEventListener('mouseup', testStopPaint);
 
+        // Advanced modal open/close
+        document.getElementById('test-advanced-btn').addEventListener('click', () => {
+          const m = document.getElementById('advanced-modal');
+          m.classList.remove('hidden');
+          m.classList.add('flex');
+        });
+
+        document.getElementById('advanced-modal').addEventListener('click', (e) => {
+          if (e.target && e.target.getAttribute('data-adv-close') === '1') {
+            const m = document.getElementById('advanced-modal');
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+          }
+        });
+
+        // Blend mode
+        document.getElementById('test-blend-mode').addEventListener('change', (e) => {
+          testBlendMode = e.target.value || 'source-over';
+        });
+
+        // Hardness
+        document.getElementById('brush-hardness').addEventListener('input', (e) => {
+          brushHardness = parseInt(e.target.value, 10);
+          document.getElementById('hardness-label').textContent = `${brushHardness}%`;
+        });
+
+        // Conversion mode
+        document.getElementById('conv-off').addEventListener('click', () => setConversionBrand(null));
+        document.querySelectorAll('[data-conv]').forEach(btn => {
+          btn.addEventListener('click', () => setConversionBrand(btn.getAttribute('data-conv')));
+        });
+
         // Resize redraw
         window.addEventListener('resize', () => {
           if (uploadedImage) drawImage();
           if (testImage) drawTestImage();
         });
+      }
+
+      function setConversionBrand(brandOrNull) {
+        conversionBrand = brandOrNull || null;
+        const label = document.getElementById('conv-label');
+        label.textContent = conversionBrand ? formatBrandName(conversionBrand) : 'OFF';
+        showToast(conversionBrand ? `Conversion mode: ${formatBrandName(conversionBrand)}` : 'Conversion mode off', 'info');
+        updateColorMatches();
       }
 
       /******************************************************************
@@ -1038,7 +1157,6 @@
           activateTab('tab-test');
           document.getElementById('view-test').classList.remove('hidden');
           refreshTestInventoryPicker();
-          // make sure canvases match container size
           if (testImage) drawTestImage();
         } else if (view === 'inventory') {
           activateTab('tab-inventory');
@@ -1068,11 +1186,11 @@
             document.getElementById('upload-zone').classList.add('hidden');
             document.getElementById('image-container').classList.remove('hidden');
 
-            // IMPORTANT FIX: wait a frame so container has real dimensions (prevents “need to upload twice” feeling)
             requestAnimationFrame(() => {
               drawImage();
               colorMarkers = [];
               markerIdCounter = 0;
+              recipeOpenByMarkerId = {};
               document.getElementById('markers-container').innerHTML = '';
               updateColorMatches();
             });
@@ -1081,7 +1199,6 @@
         };
         reader.readAsDataURL(file);
 
-        // Reset input so selecting same file again triggers change
         document.getElementById('image-upload').value = '';
       }
 
@@ -1109,6 +1226,7 @@
         uploadedImage = null;
         colorMarkers = [];
         markerIdCounter = 0;
+        recipeOpenByMarkerId = {};
 
         document.getElementById('upload-zone').classList.remove('hidden');
         document.getElementById('image-container').classList.add('hidden');
@@ -1226,6 +1344,8 @@
 
       function removeMarker(id) {
         colorMarkers = colorMarkers.filter(m => m.id !== id);
+        delete recipeOpenByMarkerId[id];
+
         const marker = document.querySelector(`[data-id="${id}"]`);
         if (marker) marker.remove();
 
@@ -1239,14 +1359,130 @@
       }
 
       /******************************************************************
-       * MATCHES (click a suggestion -> add to inventory/buy list)
+       * SELLABILITY HELPERS (owned + recipe + conversion)
+       ******************************************************************/
+      function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+
+      function hexToHsl(hex) {
+        const { r, g, b } = hexToRgb(hex);
+        const R = r / 255, G = g / 255, B = b / 255;
+        const max = Math.max(R, G, B), min = Math.min(R, G, B);
+        let h = 0, s = 0, l = (max + min) / 2;
+
+        if (max !== min) {
+          const d = max - min;
+          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+          switch (max) {
+            case R: h = (G - B) / d + (G < B ? 6 : 0); break;
+            case G: h = (B - R) / d + 2; break;
+            case B: h = (R - G) / d + 4; break;
+          }
+          h /= 6;
+        }
+        return { h: h * 360, s: s * 100, l: l * 100 };
+      }
+
+      function hslToHex(h, s, l) {
+        h /= 360; s /= 100; l /= 100;
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        let r, g, b;
+        if (s === 0) {
+          r = g = b = l;
+        } else {
+          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+          const p = 2 * l - q;
+          r = hue2rgb(p, q, h + 1/3);
+          g = hue2rgb(p, q, h);
+          b = hue2rgb(p, q, h - 1/3);
+        }
+        return rgbToHex(Math.round(r * 255), Math.round(g * 255), Math.round(b * 255));
+      }
+
+      function tweakLightness(hex, deltaL) {
+        const hsl = hexToHsl(hex);
+        const nl = clamp(hsl.l + deltaL, 0, 100);
+        return hslToHex(hsl.h, hsl.s, nl);
+      }
+
+      function paintKey(brand, name) {
+        return `${brand}||${String(name).toLowerCase()}`;
+      }
+
+      function buildOwnedIndex() {
+        const owned = new Map();
+        inventoryData
+          .filter(p => p.type === 'paint' && p.owned)
+          .forEach(p => owned.set(paintKey(p.brand, p.paint_name), p));
+        return owned;
+      }
+
+      function findClosestInBrand(targetHex, brand, limit = 5) {
+        const targetRgb = hexToRgb(targetHex);
+        const paints = PAINT_DATABASE[brand] || [];
+        const list = paints.map(p => {
+          const d = colorDistance(targetRgb, hexToRgb(p.hex));
+          return { ...p, brand, distance: Math.round((1 - d / 441.67) * 100) };
+        });
+        return list.sort((a,b) => b.distance - a.distance).slice(0, limit);
+      }
+
+      function findClosestOwnedPaint(targetHex) {
+        const owned = inventoryData.filter(p => p.type === 'paint' && p.owned);
+        if (!owned.length) return null;
+
+        const t = hexToRgb(targetHex);
+        let best = null;
+        let bestScore = -Infinity;
+
+        for (const p of owned) {
+          const d = colorDistance(t, hexToRgb(p.hex_color || '#000000'));
+          const score = (1 - d / 441.67) * 100;
+          if (score > bestScore) { bestScore = score; best = p; }
+        }
+
+        if (!best) return null;
+        return {
+          brand: best.brand,
+          name: best.paint_name,
+          hex: best.hex_color,
+          distance: Math.round(bestScore),
+          __ownedRecord: best
+        };
+      }
+
+      function recipeForTarget(targetHex, brand) {
+        const base = findClosestInBrand(targetHex, brand, 1)[0] || null;
+        const shadeTarget = tweakLightness(targetHex, -18);
+        const hiTarget = tweakLightness(targetHex, +18);
+        const shade = findClosestInBrand(shadeTarget, brand, 1)[0] || null;
+        const highlight = findClosestInBrand(hiTarget, brand, 1)[0] || null;
+        return { base, shade, highlight };
+      }
+
+      function badgeForDistance(dist) {
+        if (dist >= 95) return { label: 'Exact', cls: 'bg-green-100 text-green-700' };
+        if (dist >= 88) return { label: 'Close', cls: 'bg-indigo-100 text-indigo-700' };
+        return { label: 'Alt', cls: 'bg-gray-100 text-gray-600' };
+      }
+
+      /******************************************************************
+       * MATCHES (click suggestion -> add to inventory/buy list)
        ******************************************************************/
       function updateColorMatches() {
         const container = document.getElementById('color-matches');
         const exportBtn = document.getElementById('export-matches-btn');
+        const addAllBtn = document.getElementById('add-all-buylist-btn');
 
         if (colorMarkers.length === 0) {
           exportBtn.classList.add('hidden');
+          addAllBtn.classList.add('hidden');
           container.innerHTML = `
             <div class="text-center py-12 text-gray-400">
               <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
@@ -1263,40 +1499,128 @@
         }
 
         exportBtn.classList.remove('hidden');
+        addAllBtn.classList.remove('hidden');
+
+        const ownedIndex = buildOwnedIndex();
+
+        const escapeQuotes = (s) => String(s).replace(/'/g, "\\'");
+
+        const renderPick = (m) => {
+          const owned = ownedIndex.has(paintKey(m.brand, m.name));
+          const badge = badgeForDistance(m.distance);
+          return `
+            <div class="flex items-center gap-2 p-2 bg-white rounded-lg hover:shadow-md transition cursor-pointer"
+                 onclick="showAddDialog('${m.brand}', '${escapeQuotes(m.name)}', '${m.hex}')">
+              <div class="w-6 h-6 rounded-md shadow-sm flex-shrink-0" style="background-color:${m.hex}"></div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <p class="text-sm font-medium text-gray-800 truncate">${m.name}</p>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full ${badge.cls} font-semibold">${badge.label}</span>
+                  ${owned ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">Owned</span>` : ''}
+                </div>
+                <p class="text-xs text-gray-500">${formatBrandName(m.brand)}</p>
+              </div>
+              <span class="text-xs text-indigo-600 font-medium">${m.distance}%</span>
+            </div>
+          `;
+        };
+
+        const renderRecipePick = (m, label) => {
+          if (!m) {
+            return `
+              <div class="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100">
+                <div class="w-6 h-6 rounded-md bg-gray-100 flex-shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-gray-800">${label}</p>
+                  <p class="text-xs text-gray-500">No suggestion</p>
+                </div>
+              </div>
+            `;
+          }
+          const owned = ownedIndex.has(paintKey(m.brand, m.name));
+          return `
+            <div class="flex items-center gap-2 p-2 bg-white rounded-lg hover:shadow-md transition cursor-pointer"
+                 onclick="showAddDialog('${m.brand}', '${escapeQuotes(m.name)}', '${m.hex}')">
+              <div class="w-6 h-6 rounded-md shadow-sm flex-shrink-0" style="background-color:${m.hex}"></div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <p class="text-sm font-medium text-gray-800">${label}: <span class="truncate">${m.name}</span></p>
+                  ${owned ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">Owned</span>` : ''}
+                </div>
+                <p class="text-xs text-gray-500">${formatBrandName(m.brand)} • ${m.hex}</p>
+              </div>
+              <span class="text-xs text-indigo-600 font-medium">${m.distance}%</span>
+            </div>
+          `;
+        };
 
         container.innerHTML = colorMarkers.map((marker, index) => {
           const matches = findClosestPaints(marker.color);
+          const ownedAlt = findClosestOwnedPaint(marker.color);
+
+          const recipeBrand = conversionBrand || (matches[0]?.brand || 'citadel');
+          const isRecipeOpen = !!recipeOpenByMarkerId[marker.id];
+          const recipe = recipeForTarget(marker.color, recipeBrand);
+
           return `
             <div class="bg-gray-50 rounded-xl p-4">
-              <div class="flex items-center gap-3 mb-3">
-                <div class="w-10 h-10 rounded-lg shadow-inner border-2 border-white" style="background-color:${marker.color}"></div>
-                <div>
-                  <p class="font-semibold text-gray-800">Point ${index + 1}</p>
-                  <p class="text-xs text-gray-500 font-mono uppercase">${marker.color}</p>
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg shadow-inner border-2 border-white" style="background-color:${marker.color}"></div>
+                  <div>
+                    <p class="font-semibold text-gray-800">Point ${index + 1}</p>
+                    <p class="text-xs text-gray-500 font-mono uppercase">${marker.color}</p>
+                  </div>
                 </div>
+
+                <button class="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                  onclick="toggleRecipe(${marker.id})">
+                  ${isRecipeOpen ? 'Hide Recipe' : 'Show Recipe'}
+                </button>
               </div>
 
-              <div class="space-y-2">
-                ${matches.map(m => `
-                  <div class="flex items-center gap-2 p-2 bg-white rounded-lg hover:shadow-md transition cursor-pointer"
-                       onclick="showAddDialog('${m.brand}', '${escapeQuotes(m.name)}', '${m.hex}')">
-                    <div class="w-6 h-6 rounded-md shadow-sm flex-shrink-0" style="background-color:${m.hex}"></div>
-                    <div class="flex-1 min-w-0">
-                      <p class="text-sm font-medium text-gray-800 truncate">${m.name}</p>
-                      <p class="text-xs text-gray-500">${formatBrandName(m.brand)}</p>
-                    </div>
-                    <span class="text-xs text-indigo-600 font-medium">${m.distance}%</span>
+              ${ownedAlt ? `
+                <div class="mb-3 p-3 bg-white rounded-lg border border-amber-100">
+                  <div class="flex items-center gap-2">
+                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">Owned alternative</span>
+                    <span class="text-xs text-gray-500">Closest paint you already have</span>
                   </div>
-                `).join('')}
+                  <div class="mt-2 flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-md shadow-sm flex-shrink-0" style="background-color:${ownedAlt.hex}"></div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-gray-800 truncate">${ownedAlt.name}</p>
+                      <p class="text-xs text-gray-500">${formatBrandName(ownedAlt.brand)} • ${ownedAlt.hex}</p>
+                    </div>
+                    <span class="text-xs text-indigo-600 font-medium">${ownedAlt.distance}%</span>
+                  </div>
+                </div>
+              ` : ''}
+
+              ${isRecipeOpen ? `
+                <div class="mb-3">
+                  <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                    Recipe (${formatBrandName(recipeBrand)}) • Base / Shade / Highlight
+                  </div>
+                  <div class="space-y-2">
+                    ${renderRecipePick(recipe.base, 'Base')}
+                    ${renderRecipePick(recipe.shade, 'Shade')}
+                    ${renderRecipePick(recipe.highlight, 'Highlight')}
+                  </div>
+                </div>
+              ` : ''}
+
+              <div class="space-y-2">
+                ${matches.map(renderPick).join('')}
               </div>
             </div>
           `;
         }).join('');
       }
 
-      function escapeQuotes(s) {
-        return String(s).replace(/'/g, "\\'");
-      }
+      window.toggleRecipe = function(markerId) {
+        recipeOpenByMarkerId[markerId] = !recipeOpenByMarkerId[markerId];
+        updateColorMatches();
+      };
 
       window.showAddDialog = function(brand, name, hex) {
         const dialog = document.createElement('div');
@@ -1363,7 +1687,6 @@
 
         const existing = inventoryData.find(p => p.brand === brand && p.paint_name === name);
         if (existing) {
-          // If it exists but wasn't owned, mark owned.
           if (!existing.owned) {
             const res = await store.update({ ...existing, owned: true, quantity: Math.max(1, existing.quantity || 1) });
             if (res.isOk) showToast(`${name} marked as owned!`, 'success');
@@ -1385,11 +1708,8 @@
           created_at: new Date().toISOString()
         });
 
-        if (result.isOk) {
-          showToast(`${name} added to inventory!`, 'success');
-        } else {
-          showToast('Failed to add paint', 'error');
-        }
+        if (result.isOk) showToast(`${name} added to inventory!`, 'success');
+        else showToast('Failed to add paint', 'error');
       }
 
       async function addToBuylistFromDialog(brand, name, hex) {
@@ -1420,9 +1740,61 @@
       }
 
       /******************************************************************
+       * ADD ALL TO BUY LIST (conversion-friendly)
+       ******************************************************************/
+      async function addAllMatchesToBuylist() {
+        if (!colorMarkers.length) return;
+
+        const toAdd = [];
+
+        for (const marker of colorMarkers) {
+          const top = findClosestPaints(marker.color, 1)[0];
+
+          if (recipeOpenByMarkerId[marker.id]) {
+            const recipeBrand = conversionBrand || (top?.brand || 'citadel');
+            const recipe = recipeForTarget(marker.color, recipeBrand);
+            [recipe.base, recipe.shade, recipe.highlight].forEach(p => {
+              if (p) toAdd.push({ brand: p.brand, name: p.name, hex: p.hex });
+            });
+          } else if (top) {
+            toAdd.push({ brand: top.brand, name: top.name, hex: top.hex });
+          }
+        }
+
+        const uniq = new Map();
+        toAdd.forEach(p => uniq.set(paintKey(p.brand, p.name), p));
+
+        let added = 0;
+        for (const p of uniq.values()) {
+          const exists = buylistData.find(x => x.brand === p.brand && x.paint_name === p.name);
+          if (exists) continue;
+
+          const res = await store.create({
+            type: 'buylist',
+            brand: p.brand,
+            paint_name: p.name,
+            hex_color: p.hex,
+            owned: false,
+            quantity: 1,
+            notes: '',
+            created_at: new Date().toISOString()
+          });
+
+          if (res.isOk) added++;
+        }
+
+        showToast(added ? `Added ${added} paints to Buy List` : 'Nothing new to add', added ? 'success' : 'info');
+        switchView('buylist');
+      }
+
+      /******************************************************************
        * COLOR MATCHING
        ******************************************************************/
       function findClosestPaints(targetHex, limit = 5) {
+        if (conversionBrand) {
+          return findClosestInBrand(targetHex, conversionBrand, limit);
+        }
+
         const targetRgb = hexToRgb(targetHex);
         const allPaints = [];
 
@@ -1607,6 +1979,7 @@
         if (filtered.length === 0) {
           emptyState.classList.remove('hidden');
           grid.innerHTML = '';
+          refreshTestInventoryPicker();
           return;
         }
 
@@ -1646,7 +2019,6 @@
           </div>
         `).join('');
 
-        // keep picker in sync
         refreshTestInventoryPicker();
       }
 
@@ -1709,7 +2081,6 @@
         const del = await store.delete(item);
         if (!del.isOk) return showToast('Failed to move paint', 'error');
 
-        // if already exists in inventory, just mark owned/increase qty
         const existing = inventoryData.find(p => p.brand === item.brand && p.paint_name === item.paint_name);
         if (existing) {
           const up = await store.update({ ...existing, owned: true, quantity: (existing.quantity || 1) + 1 });
@@ -1777,7 +2148,7 @@
       }
 
       /******************************************************************
-       * TEST PAINT (overlay painting)
+       * TEST PAINT (overlay painting) - upgraded with blend + hardness
        ******************************************************************/
       function refreshTestInventoryPicker() {
         const sel = document.getElementById('test-inv-pick');
@@ -1866,7 +2237,6 @@
         }
         isPainting = true;
 
-        // snapshot for undo at start of stroke
         const paint = document.getElementById('test-paint-canvas');
         const pctx = paint.getContext('2d');
         try {
@@ -1888,6 +2258,32 @@
         lastPt = null;
       }
 
+      function stampSoftBrush(ctx, x, y, radius, color, opacity, hardnessPct) {
+        const h = clamp(hardnessPct, 0, 100) / 100;
+        const inner = radius * h;
+
+        ctx.fillStyle = color;
+
+        ctx.globalAlpha = opacity;
+
+        if (h >= 0.95) {
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          const steps = 6;
+          for (let i = 0; i < steps; i++) {
+            const t = (i + 1) / steps;
+            ctx.globalAlpha = opacity * (1 - t) * 0.9;
+            ctx.beginPath();
+            ctx.arc(x, y, inner + (radius - inner) * t, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        ctx.globalAlpha = 1;
+      }
+
       function testPaintTo(x, y, forceDot = false) {
         const paint = document.getElementById('test-paint-canvas');
         const ctx = paint.getContext('2d');
@@ -1896,28 +2292,32 @@
         const opacity = parseInt(document.getElementById('brush-opacity').value, 10) / 100;
         const color = document.getElementById('test-paint-color').value;
 
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.strokeStyle = color;
-        ctx.globalAlpha = opacity;
-        ctx.lineWidth = size;
+        ctx.globalCompositeOperation = testBlendMode || 'source-over';
+
+        const radius = Math.max(1, size / 2);
 
         if (!lastPt || forceDot) {
-          ctx.beginPath();
-          ctx.moveTo(x, y);
-          ctx.lineTo(x + 0.01, y + 0.01);
-          ctx.stroke();
+          stampSoftBrush(ctx, x, y, radius, color, opacity, brushHardness);
           lastPt = { x, y };
-          ctx.globalAlpha = 1;
+          ctx.globalCompositeOperation = 'source-over';
           return;
         }
 
-        ctx.beginPath();
-        ctx.moveTo(lastPt.x, lastPt.y);
-        ctx.lineTo(x, y);
-        ctx.stroke();
+        const dx = x - lastPt.x;
+        const dy = y - lastPt.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const step = Math.max(1, radius * 0.35);
+        const steps = Math.ceil(dist / step);
+
+        for (let i = 1; i <= steps; i++) {
+          const t = i / steps;
+          const px = lastPt.x + dx * t;
+          const py = lastPt.y + dy * t;
+          stampSoftBrush(ctx, px, py, radius, color, opacity, brushHardness);
+        }
+
         lastPt = { x, y };
-        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
       }
 
       function testUndo() {
