@@ -1,2481 +1,1346 @@
 <!doctype html>
 <html lang="en" class="h-full">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Miniature Paint Matcher</title>
-
-    <!-- Tailwind -->
-    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-
-    <!-- Optional (Canva/Element SDK). Code below will work WITHOUT these. -->
-    <script src="/_sdk/element_sdk.js"></script>
-    <script src="/_sdk/data_sdk.js"></script>
-
-    <!-- PDF export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-    <!-- Font -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-
-    <style>
-      * { font-family: 'Outfit', sans-serif; }
-      body { box-sizing: border-box; }
-
-      .paint-swatch { transition: all 0.2s ease; }
-      .paint-swatch:hover { transform: scale(1.05); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
-
-      .color-marker { cursor: grab; transition: box-shadow 0.2s; }
-      .color-marker:active { cursor: grabbing; }
-      .color-marker:hover { box-shadow: 0 0 0 4px rgba(255,255,255,0.5); }
-
-      .tab-active { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; }
-
-      .brand-pill { transition: all 0.2s; }
-      .brand-pill:hover { transform: translateY(-2px); }
-
-      input[type="file"] { display: none; }
-
-      .upload-zone {
-        border: 2px dashed #6366f1;
-        transition: all 0.3s;
-        background: linear-gradient(135deg, rgba(99,102,241,0.05) 0%, rgba(139,92,246,0.05) 100%);
-      }
-      .upload-zone:hover {
-        border-color: #8b5cf6;
-        background: linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(139,92,246,0.1) 100%);
-      }
-
-      .glass-card {
-        background: rgba(255,255,255,0.95);
-        backdrop-filter: blur(10px);
-      }
-
-      .gradient-bg {
-        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #3730a3 100%);
-      }
-
-      .scrollbar-thin::-webkit-scrollbar { width: 6px; }
-      .scrollbar-thin::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 3px; }
-      .scrollbar-thin::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 3px; }
-      .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #a5b4fc; }
-
-      /* Paint-test cursor */
-      .paint-cursor {
-        position: absolute;
-        pointer-events: none;
-        border: 2px solid rgba(255,255,255,0.85);
-        border-radius: 9999px;
-        transform: translate(-50%, -50%);
-        mix-blend-mode: screen;
-        display: none;
-      }
-    </style>
-  </head>
-
-  <body class="h-full gradient-bg overflow-auto">
-    <div id="app" class="h-full w-full flex flex-col">
-      <!-- Header -->
-      <header class="flex-shrink-0 px-6 py-5 flex items-center justify-between border-b border-white/10">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shadow-lg">
-            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M5 3a2 2 0 00-2 2v6h16V5a2 2 0 00-2-2H5zm16 8H2v5a2 2 0 002 2h12a2 2 0 002-2v-5z" />
-            </svg>
-          </div>
-          <h1 id="app-title" class="text-xl font-semibold text-white">Paint Matcher</h1>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Miniature Paint Assistant</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Outfit', sans-serif; }
+    .gradient-bg { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #3730a3 100%); }
+    .glass-card { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); }
+    .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 3px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 3px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #a5b4fc; }
+    input[type="file"] { display:none; }
+    .upload-zone { border: 2px dashed #6366f1; transition: all 0.3s;
+      background: linear-gradient(135deg, rgba(99,102,241,0.05) 0%, rgba(139,92,246,0.05) 100%); }
+    .upload-zone:hover { border-color:#8b5cf6;
+      background: linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(139,92,246,0.1) 100%); }
+    .color-marker { cursor: grab; transition: box-shadow 0.2s; }
+    .color-marker:active { cursor: grabbing; }
+    .color-marker:hover { box-shadow: 0 0 0 4px rgba(255,255,255,0.5); }
+    .tab-active { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; }
+    .modal-backdrop { background: rgba(0,0,0,0.5); }
+    .print-sheet { background:#fff; color:#111827; width:210mm; padding:18mm; }
+    .print-muted { color:#6b7280; }
+    .print-card { border:1px solid #e5e7eb; border-radius:10px; padding:12px; }
+  </style>
+</head>
+<body class="h-full gradient-bg overflow-auto">
+  <div class="h-full w-full flex flex-col">
+    <header class="flex-shrink-0 px-6 py-5 flex items-center justify-between border-b border-white/10 gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shadow-lg">
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M5 3a2 2 0 00-2 2v6h16V5a2 2 0 00-2-2H5zm16 8H2v5a2 2 0 002 2h12a2 2 0 002-2v-5z" />
+          </svg>
         </div>
-
-        <nav class="flex gap-2 bg-white/10 p-1 rounded-lg backdrop-blur">
-          <button id="tab-matcher" class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm transition-all tab-active">Color Matcher</button>
-          <button id="tab-test" class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm text-white/70 hover:text-white hover:bg-white/10 transition-all">Test Paint</button>
-          <button id="tab-inventory" class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm text-white/70 hover:text-white hover:bg-white/10 transition-all">My Inventory</button>
-          <button id="tab-buylist" class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm text-white/70 hover:text-white hover:bg-white/10 transition-all">Buy List</button>
-        </nav>
-      </header>
-
-      <!-- Main -->
-      <main class="flex-1 px-6 pb-6 overflow-hidden">
-        <!-- Color Matcher View -->
-        <div id="view-matcher" class="h-full flex gap-6">
-          <!-- Left Panel -->
-          <div class="flex-1 glass-card rounded-2xl p-6 flex flex-col overflow-hidden">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <div class="w-1.5 h-1.5 bg-indigo-600 rounded-full"></div>
-              Reference Image
-            </h2>
-
-            <!-- Upload Zone -->
-            <div id="upload-zone" class="flex-1 upload-zone rounded-xl flex flex-col items-center justify-center">
-              <!-- IMPORTANT: label already opens file picker; no extra JS click needed (fixes “upload twice”). -->
-              <label for="image-upload" class="cursor-pointer flex flex-col items-center">
-                <div class="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center mb-4">
-                  <svg class="w-10 h-10 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <p class="text-indigo-600 font-medium text-lg mb-1">Upload your reference image</p>
-                <p class="text-gray-500 text-sm">Click or drag & drop your miniature photo</p>
-              </label>
-              <input type="file" id="image-upload" accept="image/*" />
-            </div>
-
-            <!-- Image Canvas -->
-            <div id="image-container" class="flex-1 relative rounded-xl overflow-hidden bg-gray-100 hidden">
-              <canvas id="image-canvas" class="w-full h-full object-contain"></canvas>
-              <div id="markers-container" class="absolute inset-0"></div>
-
-              <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center">
-                <button id="add-marker-btn"
-                  class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition shadow-lg flex items-center gap-2">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                  </svg>
-                  Add Color Point
-                </button>
-
-                <button id="clear-image-btn"
-                  class="px-4 py-2 bg-white/90 text-gray-700 rounded-lg font-medium text-sm hover:bg-white transition shadow-lg">
-                  Change Image
-                </button>
-              </div>
-            </div>
+        <div>
+          <h1 class="text-xl font-semibold text-white leading-tight">Miniature Paint Assistant</h1>
+          <div class="text-xs text-white/70 flex items-center gap-2">
+            <span id="active-project-label">No project</span>
+            <span class="text-white/40">•</span>
+            <button class="text-white/80 hover:text-white underline decoration-white/30" data-action="open-projects">Projects</button>
           </div>
-
-          <!-- Right Panel -->
-          <div class="w-96 glass-card rounded-2xl p-6 flex flex-col overflow-hidden">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <div class="w-1.5 h-1.5 bg-purple-600 rounded-full"></div>
-              Color Matches
-            </h2>
-
-            <!-- Action row -->
-            <div class="flex items-center gap-2 mb-4">
-              <button id="export-matches-btn"
-                class="flex-shrink-0 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium text-xs hover:from-purple-600 hover:to-pink-600 transition shadow-lg flex items-center gap-2 hidden">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-                Export PDF
-              </button>
-
-              <button id="add-all-buylist-btn"
-                class="flex-shrink-0 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium text-xs hover:from-indigo-700 hover:to-purple-700 transition shadow-lg flex items-center gap-2 hidden">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 7h13M10 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z" />
-                </svg>
-                Add All to Buy List
-              </button>
-            </div>
-
-            <div id="color-matches" class="flex-1 overflow-y-auto scrollbar-thin space-y-4">
-              <div class="text-center py-12 text-gray-400">
-                <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                  <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-                  </svg>
-                </div>
-                <p class="font-medium">No colors selected</p>
-                <p class="text-sm mt-1">Upload an image and add color points</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Test Paint View -->
-        <div id="view-test" class="h-full hidden flex gap-6 overflow-hidden">
-          <div class="flex-1 glass-card rounded-2xl p-6 flex flex-col overflow-hidden">
-            <div class="flex items-center justify-between gap-4 mb-4">
-              <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                <div class="w-1.5 h-1.5 bg-indigo-600 rounded-full"></div>
-                Test Paint
-              </h2>
-
-              <div class="flex items-center gap-2 flex-wrap">
-                <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Brush</label>
-                <input id="brush-size" type="range" min="4" max="60" value="18" class="w-40" />
-                <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Opacity</label>
-                <input id="brush-opacity" type="range" min="5" max="100" value="55" class="w-40" />
-              </div>
-            </div>
-
-            <div class="flex items-center gap-3 mb-4 flex-wrap">
-              <div class="flex items-center gap-2">
-                <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Paint Color</label>
-                <input type="color" id="test-paint-color" value="#c21f30" class="w-12 h-10 rounded-lg border border-gray-200 cursor-pointer" />
-                <div id="test-paint-preview" class="w-12 h-10 rounded-lg border-2 border-gray-200 shadow-inner" style="background-color:#c21f30"></div>
-              </div>
-
-              <div class="flex items-center gap-2">
-                <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Pick from Inventory</label>
-                <select id="test-inv-pick" class="px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm min-w-[240px]">
-                  <option value="">— Select a paint —</option>
-                </select>
-              </div>
-
-              <button id="test-upload-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition shadow-lg">
-                Upload Image
-              </button>
-              <input type="file" id="test-image-upload" accept="image/*" />
-
-              <button id="test-undo-btn" class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-50 transition shadow">
-                Undo
-              </button>
-
-              <button id="test-clear-paint-btn" class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-50 transition shadow">
-                Clear Paint
-              </button>
-
-              <button id="test-advanced-btn" class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-50 transition shadow">
-                Advanced
-              </button>
-            </div>
-
-            <div id="test-stage" class="flex-1 relative rounded-xl overflow-hidden bg-gray-100">
-              <canvas id="test-base-canvas" class="absolute inset-0 w-full h-full"></canvas>
-              <canvas id="test-paint-canvas" class="absolute inset-0 w-full h-full"></canvas>
-              <div id="test-cursor" class="paint-cursor"></div>
-
-              <div id="test-empty" class="absolute inset-0 flex items-center justify-center text-gray-400">
-                <div class="text-center">
-                  <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                    <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14" />
-                    </svg>
-                  </div>
-                  <p class="font-medium">Upload an image to start painting</p>
-                  <p class="text-sm mt-1">This only paints on a transparent overlay (non-destructive)</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="w-96 glass-card rounded-2xl p-6 flex flex-col overflow-hidden">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <div class="w-1.5 h-1.5 bg-purple-600 rounded-full"></div>
-              Tips
-            </h2>
-
-            <div class="flex-1 overflow-y-auto scrollbar-thin space-y-3 text-sm text-gray-600">
-              <div class="bg-gray-50 rounded-xl p-4">
-                <p class="font-medium text-gray-800 mb-1">How it works</p>
-                <p>It paints onto a separate overlay canvas, so you can “test” colors without changing the original image.</p>
-              </div>
-              <div class="bg-gray-50 rounded-xl p-4">
-                <p class="font-medium text-gray-800 mb-1">Shortcuts</p>
-                <p><span class="font-mono">Mouse</span>: paint • <span class="font-mono">Undo</span>: removes last stroke.</p>
-              </div>
-              <div class="bg-gray-50 rounded-xl p-4">
-                <p class="font-medium text-gray-800 mb-1">Pick paints</p>
-                <p>Use the dropdown to select any paint you’ve added to Inventory.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Inventory View -->
-        <div id="view-inventory" class="h-full hidden flex flex-col gap-6 overflow-hidden">
-          <!-- Brand Filter & Search -->
-          <div class="glass-card rounded-2xl p-4 flex-shrink-0">
-            <div class="flex flex-wrap gap-3 items-center justify-between">
-              <div class="flex gap-2 flex-wrap">
-                <button data-brand="all" class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white">All Brands</button>
-                <button data-brand="citadel" class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Citadel</button>
-                <button data-brand="vallejo" class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Vallejo</button>
-                <button data-brand="army_painter" class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Army Painter</button>
-                <button data-brand="pro_acryl" class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Pro Acryl</button>
-              </div>
-
-              <div class="flex gap-2">
-                <div class="relative">
-                  <input type="text" id="search-paints" placeholder="Search paints..."
-                    class="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm w-64" />
-                  <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-
-                <button id="show-owned-only"
-                  class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                  <span id="owned-toggle-icon">☐</span> Owned Only
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Quick Add -->
-          <div class="glass-card rounded-2xl p-4 flex-shrink-0">
-            <div class="flex gap-3 items-end flex-wrap">
-              <div class="flex-1 min-w-48">
-                <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Brand</label>
-                <select id="new-paint-brand" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm">
-                  <option value="citadel">Citadel</option>
-                  <option value="vallejo">Vallejo</option>
-                  <option value="army_painter">Army Painter</option>
-                  <option value="pro_acryl">Pro Acryl</option>
-                </select>
-              </div>
-
-              <div class="flex-1 min-w-48">
-                <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Paint Name</label>
-                <input type="text" id="new-paint-name" placeholder="e.g., Mephiston Red"
-                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm" />
-              </div>
-
-              <div class="w-24">
-                <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Color</label>
-                <input type="color" id="new-paint-color" value="#c21f30" class="w-full h-10 rounded-lg border border-gray-200 cursor-pointer" />
-              </div>
-
-              <div class="w-20">
-                <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Qty</label>
-                <input type="number" id="new-paint-qty" value="1" min="1"
-                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm" />
-              </div>
-
-              <button id="add-paint-btn"
-                class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium text-sm hover:from-indigo-700 hover:to-purple-700 transition shadow-lg flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Add to Inventory
-              </button>
-            </div>
-          </div>
-
-          <!-- Grid -->
-          <div class="flex-1 glass-card rounded-2xl p-6 overflow-hidden flex flex-col">
-            <div class="flex justify-between items-center mb-4 flex-shrink-0">
-              <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                <div class="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
-                My Paint Collection
-                <span id="paint-count" class="text-sm font-normal text-gray-500">(0 paints)</span>
-              </h2>
-
-              <div class="flex items-center gap-2 text-sm text-gray-500">
-                <span id="inventory-stats">0 owned</span>
-              </div>
-            </div>
-
-            <div id="inventory-grid" class="flex-1 overflow-y-auto scrollbar-thin">
-              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"></div>
-
-              <div id="empty-inventory" class="text-center py-16 text-gray-400">
-                <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                  <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                  </svg>
-                </div>
-                <p class="font-medium text-lg">Your inventory is empty</p>
-                <p class="text-sm mt-1">Add paints using the form above</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Buy List View (ONLY ONCE — removed duplicate) -->
-        <div id="view-buylist" class="h-full hidden flex flex-col gap-6 overflow-hidden">
-          <!-- Add Form -->
-          <div class="glass-card rounded-2xl p-4 flex-shrink-0">
-            <div class="flex gap-3 items-end flex-wrap">
-              <div class="flex-1 min-w-48">
-                <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Brand</label>
-                <select id="buylist-paint-brand" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm">
-                  <option value="citadel">Citadel</option>
-                  <option value="vallejo">Vallejo</option>
-                  <option value="army_painter">Army Painter</option>
-                  <option value="pro_acryl">Pro Acryl</option>
-                </select>
-              </div>
-
-              <div class="flex-1 min-w-48">
-                <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Paint Name</label>
-                <input type="text" id="buylist-paint-name" placeholder="e.g., Mephiston Red"
-                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm" />
-              </div>
-
-              <div class="w-24">
-                <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Color</label>
-                <div class="flex gap-2 items-center">
-                  <input type="color" id="buylist-paint-color" value="#c21f30" class="w-12 h-10 rounded-lg border border-gray-200 cursor-pointer" />
-                  <div id="buylist-color-preview" class="w-12 h-10 rounded-lg border-2 border-gray-200 shadow-inner" style="background-color:#c21f30"></div>
-                </div>
-              </div>
-
-              <button id="add-buylist-btn"
-                class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium text-sm hover:from-indigo-700 hover:to-purple-700 transition shadow-lg flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Add to Buy List
-              </button>
-            </div>
-          </div>
-
-          <!-- Grid -->
-          <div class="flex-1 glass-card rounded-2xl p-6 overflow-hidden flex flex-col">
-            <div class="flex justify-between items-center mb-4 flex-shrink-0">
-              <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                <div class="w-1.5 h-1.5 bg-purple-600 rounded-full"></div>
-                Items to Buy
-                <span id="buylist-count" class="text-sm font-normal text-gray-500">(0 items)</span>
-              </h2>
-            </div>
-
-            <div id="buylist-grid" class="flex-1 overflow-y-auto scrollbar-thin">
-              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"></div>
-
-              <div id="empty-buylist" class="text-center py-16 text-gray-400">
-                <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                  <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                  </svg>
-                </div>
-                <p class="font-medium text-lg">Your buy list is empty</p>
-                <p class="text-sm mt-1">Add paints you want to purchase</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-
-    <!-- Advanced Modal (keeps UI clean/premium) -->
-    <div id="advanced-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-adv-close="1"></div>
-      <div class="relative bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 glass-card">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="font-semibold text-gray-800">Advanced Paint Settings</h3>
-          <button data-adv-close="1" class="text-gray-500 hover:text-gray-700 font-medium">✕</button>
-        </div>
-
-        <div class="space-y-4">
-          <div>
-            <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">Blend Mode</label>
-            <select id="test-blend-mode" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm">
-              <option value="source-over">Normal</option>
-              <option value="multiply">Multiply</option>
-              <option value="overlay">Overlay</option>
-              <option value="screen">Screen</option>
-              <option value="soft-light">Soft Light</option>
-              <option value="hard-light">Hard Light</option>
-              <option value="color">Color</option>
-              <option value="luminosity">Luminosity</option>
-            </select>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between">
-              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Brush Hardness</label>
-              <span id="hardness-label" class="text-xs text-gray-500 font-mono">70%</span>
-            </div>
-            <input id="brush-hardness" type="range" min="0" max="100" value="70" class="w-full" />
-            <p class="text-xs text-gray-500 mt-1">Lower = softer feathered edges (better glazing).</p>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between">
-              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Conversion Mode</label>
-              <span id="conv-label" class="text-xs text-gray-500 font-mono">OFF</span>
-            </div>
-            <div class="flex gap-2 flex-wrap">
-              <button id="conv-off" class="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">Off</button>
-              <button data-conv="citadel" class="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">Citadel</button>
-              <button data-conv="vallejo" class="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">Vallejo</button>
-              <button data-conv="army_painter" class="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">Army Painter</button>
-              <button data-conv="pro_acryl" class="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">Pro Acryl</button>
-            </div>
-            <p class="text-xs text-gray-500 mt-1">For pitching: forces matches + recipes to one brand.</p>
-          </div>
-        </div>
-
-        <div class="mt-5 flex justify-end">
-          <button data-adv-close="1" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition shadow-lg">
-            Done
-          </button>
         </div>
       </div>
+      <nav class="flex gap-2 bg-white/10 p-1 rounded-lg backdrop-blur flex-wrap">
+        <button data-action="tab" data-tab="matcher" class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm transition-all tab-active">Matcher</button>
+        <button data-action="tab" data-tab="inventory" class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm text-white/70 hover:text-white hover:bg-white/10 transition-all">Inventory</button>
+        <button data-action="tab" data-tab="buylist" class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm text-white/70 hover:text-white hover:bg-white/10 transition-all">Buy List</button>
+      </nav>
+      <div class="hidden md:flex items-center gap-2">
+        <button class="px-3 py-2 rounded-lg bg-white/10 text-white/90 hover:bg-white/15 text-sm" data-action="open-advanced">Advanced</button>
+      </div>
+    </header>
+    <main class="flex-1 px-6 pb-6 overflow-hidden">
+      <!-- Matcher -->
+      <div id="view-matcher" class="h-full flex gap-6">
+        <div class="flex-1 glass-card rounded-2xl p-6 flex flex-col overflow-hidden">
+          <div class="flex items-start justify-between gap-4 mb-4">
+            <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <div class="w-1.5 h-1.5 bg-indigo-600 rounded-full"></div> Reference Image
+            </h2>
+            <div class="flex items-center gap-2 flex-wrap justify-end">
+              <button class="px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm border border-gray-200"
+                      data-action="save-project-snapshot">Save Snapshot</button>
+              <button class="px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm border border-gray-200"
+                      data-action="open-advanced">Recipe Settings</button>
+            </div>
+          </div>
+          <div id="upload-zone" class="flex-1 upload-zone rounded-xl flex flex-col items-center justify-center">
+            <label for="image-upload" class="cursor-pointer flex flex-col items-center">
+              <div class="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center mb-4">
+                <svg class="w-10 h-10 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <p class="text-indigo-600 font-medium text-lg mb-1">Upload your reference image</p>
+              <p class="text-gray-500 text-sm">Click or drag & drop your miniature photo</p>
+            </label>
+            <input type="file" id="image-upload" accept="image/*" />
+          </div>
+          <div id="image-container" class="flex-1 relative rounded-xl overflow-hidden bg-gray-100 hidden">
+            <canvas id="image-canvas" class="w-full h-full object-contain"></canvas>
+            <div id="markers-container" class="absolute inset-0"></div>
+            <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center">
+              <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition shadow-lg flex items-center gap-2"
+                      data-action="add-marker">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg> Add Color Point
+              </button>
+              <button class="px-4 py-2 bg-white/90 text-gray-700 rounded-lg font-medium text-sm hover:bg-white transition shadow-lg"
+                      data-action="clear-image">Change Image</button>
+            </div>
+          </div>
+        </div>
+        <div class="w-96 glass-card rounded-2xl p-6 flex flex-col overflow-hidden">
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <div class="w-1.5 h-1.5 bg-purple-600 rounded-full"></div> Paint Plan
+            </h2>
+            <button class="px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm border border-gray-200"
+                    data-action="open-advanced">Advanced</button>
+          </div>
+          <div class="flex items-center gap-2 mb-4 flex-wrap">
+            <button id="export-matches-btn" class="px-3 py-1.5 bg-white text-gray-700 rounded-lg font-medium text-xs hover:bg-gray-50 transition shadow border border-gray-200 hidden"
+                    data-action="export-plan">Export Printable PDF</button>
+            <button id="add-all-buylist-btn" class="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium text-xs hover:from-indigo-700 hover:to-purple-700 transition shadow-lg hidden"
+                    data-action="add-all-to-buylist">Add All (Recipes) to Buy List</button>
+          </div>
+          <div id="color-matches" class="flex-1 overflow-y-auto scrollbar-thin space-y-4"></div>
+        </div>
+      </div>
+      <!-- Inventory -->
+      <div id="view-inventory" class="h-full hidden flex flex-col gap-6 overflow-hidden">
+        <div class="glass-card rounded-2xl p-4 flex-shrink-0">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div class="flex gap-2 flex-wrap">
+              <button data-action="inv-brand" data-brand="all" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white">All Brands</button>
+              <button data-action="inv-brand" data-brand="citadel" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Citadel</button>
+              <button data-action="inv-brand" data-brand="vallejo" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Vallejo</button>
+              <button data-action="inv-brand" data-brand="army_painter" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Army Painter</button>
+              <button data-action="inv-brand" data-brand="pro_acryl" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Pro Acryl</button>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <input id="search-paints" placeholder="Search paints..." class="px-3 py-2 rounded-lg border border-gray-200 text-sm w-64" />
+              <button id="show-owned-only" class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      data-action="inv-owned-only"><span id="owned-toggle-icon"> </span> Owned Only</button>
+              <button class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      data-action="open-projects">Projects</button>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card rounded-2xl p-4 flex-shrink-0">
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+            <div class="md:col-span-2">
+              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Brand</label>
+              <select id="new-paint-brand" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm">
+                <option value="citadel">Citadel</option>
+                <option value="vallejo">Vallejo</option>
+                <option value="army_painter">Army Painter</option>
+                <option value="pro_acryl">Pro Acryl</option>
+              </select>
+            </div>
+            <div class="md:col-span-3">
+              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Paint Name</label>
+              <input id="new-paint-name" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" placeholder="e.g., Mephiston Red" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Type</label>
+              <select id="new-paint-type" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm">
+                <option>Base</option><option>Layer</option><option>Shade</option><option>Metallic</option><option>Primer</option><option>Technical</option><option>Contrast</option><option>Other</option>
+              </select>
+            </div>
+            <div class="md:col-span-1">
+              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Color</label>
+              <input type="color" id="new-paint-color" value="#c21f30" class="w-full h-10 rounded-lg border border-gray-200 cursor-pointer" />
+            </div>
+            <div class="md:col-span-1">
+              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Qty</label>
+              <input type="number" id="new-paint-qty" value="1" min="1" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">SKU (optional)</label>
+              <input id="new-paint-sku" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" placeholder="future retail" />
+            </div>
+            <div class="md:col-span-1">
+              <button class="w-full px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium text-sm hover:from-indigo-700 hover:to-purple-700 transition shadow-lg"
+                      data-action="inv-add">Add</button>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1 glass-card rounded-2xl p-6 overflow-hidden flex flex-col">
+          <div class="flex justify-between items-center mb-4 flex-shrink-0">
+            <h2 class="text-lg font-semibold text-gray-800">My Paint Collection <span id="paint-count" class="text-sm font-normal text-gray-500">(0 paints)</span></h2>
+            <div class="text-sm text-gray-500" id="inventory-stats">0 owned</div>
+          </div>
+          <div id="inventory-grid" class="flex-1 overflow-y-auto scrollbar-thin">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"></div>
+            <div id="empty-inventory" class="text-center py-16 text-gray-400 hidden">No paints yet.</div>
+          </div>
+        </div>
+      </div>
+      <!-- Buy list -->
+      <div id="view-buylist" class="h-full hidden flex flex-col gap-6 overflow-hidden">
+        <div class="glass-card rounded-2xl p-4 flex-shrink-0">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <div class="text-sm font-semibold text-gray-800">Smart Cart Hygiene</div>
+              <div class="text-xs text-gray-500" id="buylist-subtext">Auto-dedupe • quantity suggestions • avoids owned duplicates</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50" data-action="buylist-clear">Clear</button>
+              <button class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 shadow" data-action="export-plan">Export Printable PDF</button>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card rounded-2xl p-4 flex-shrink-0">
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+            <div class="md:col-span-2">
+              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Brand</label>
+              <select id="buylist-paint-brand" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm">
+                <option value="citadel">Citadel</option><option value="vallejo">Vallejo</option><option value="army_painter">Army Painter</option><option value="pro_acryl">Pro Acryl</option>
+              </select>
+            </div>
+            <div class="md:col-span-4">
+              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Paint Name</label>
+              <input id="buylist-paint-name" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" placeholder="e.g., Mephiston Red" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Type</label>
+              <select id="buylist-paint-type" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm">
+                <option>Base</option><option>Layer</option><option>Shade</option><option>Metallic</option><option>Primer</option><option>Technical</option><option>Contrast</option><option>Other</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Color</label>
+              <div class="flex gap-2 items-center">
+                <input type="color" id="buylist-paint-color" value="#c21f30" class="w-12 h-10 rounded-lg border border-gray-200 cursor-pointer" />
+                <div id="buylist-color-preview" class="w-12 h-10 rounded-lg border border-gray-200" style="background:#c21f30"></div>
+              </div>
+            </div>
+            <div class="md:col-span-1">
+              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Qty</label>
+              <input type="number" id="buylist-paint-qty" value="1" min="1" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+            </div>
+            <div class="md:col-span-1">
+              <button class="w-full px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium text-sm hover:from-indigo-700 hover:to-purple-700 transition shadow-lg"
+                      data-action="buylist-add">Add</button>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1 glass-card rounded-2xl p-6 overflow-hidden flex flex-col">
+          <div class="flex justify-between items-center mb-4 flex-shrink-0">
+            <h2 class="text-lg font-semibold text-gray-800">Items to Buy <span id="buylist-count" class="text-sm font-normal text-gray-500">(0 items)</span></h2>
+          </div>
+          <div id="buylist-grid" class="flex-1 overflow-y-auto scrollbar-thin">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"></div>
+            <div id="empty-buylist" class="text-center py-16 text-gray-400 hidden">Your buy list is empty.</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+    <div class="absolute inset-0 modal-backdrop backdrop-blur-sm" data-action="modal-close"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 glass-card">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-gray-800" id="modal-title">Modal</h3>
+        <button class="text-gray-500 hover:text-gray-700 font-medium" data-action="modal-close"> </button>
+      </div>
+      <div id="modal-body"></div>
+      <div id="modal-footer" class="mt-5 flex justify-end gap-2"></div>
     </div>
-
-    <script>
-      /******************************************************************
-       * PAINT DATABASE (unchanged from yours)
-       ******************************************************************/
-      const PAINT_DATABASE = {
-        citadel: [
-          { name: "Abaddon Black", hex: "#231f20" },
-          { name: "Administratum Grey", hex: "#949b95" },
-          { name: "Agrax Earthshade", hex: "#5a4522" },
-          { name: "Alaitoc Blue", hex: "#3d6183" },
-          { name: "Altdorf Guard Blue", hex: "#1f4f8f" },
-          { name: "Averland Sunset", hex: "#fdb825" },
-          { name: "Balor Brown", hex: "#8f6e30" },
-          { name: "Balthasar Gold", hex: "#a47552" },
-          { name: "Baneblade Brown", hex: "#937f6d" },
-          { name: "Blood Angels Red", hex: "#c11619" },
-          { name: "Bugman's Glow", hex: "#834f44" },
-          { name: "Cadian Fleshtone", hex: "#c77958" },
-          { name: "Caledor Sky", hex: "#366699" },
-          { name: "Calgar Blue", hex: "#4272b8" },
-          { name: "Castellan Green", hex: "#273d28" },
-          { name: "Celestra Grey", hex: "#9aaca7" },
-          { name: "Ceramite White", hex: "#ffffff" },
-          { name: "Chaos Black", hex: "#0d0d0d" },
-          { name: "Corax White", hex: "#ffffff" },
-          { name: "Daemonette Hide", hex: "#6c5a70" },
-          { name: "Dark Angels Green", hex: "#00440a" },
-          { name: "Dark Reaper", hex: "#3b4d53" },
-          { name: "Death Guard Green", hex: "#6d7442" },
-          { name: "Deathworld Forest", hex: "#5b6633" },
-          { name: "Doombull Brown", hex: "#5d3526" },
-          { name: "Dorn Yellow", hex: "#fff55a" },
-          { name: "Druchii Violet", hex: "#472c59" },
-          { name: "Dryad Bark", hex: "#33312d" },
-          { name: "Elysian Green", hex: "#6b804a" },
-          { name: "Emperor's Children", hex: "#b94278" },
-          { name: "Eshin Grey", hex: "#4a4f52" },
-          { name: "Evil Sunz Scarlet", hex: "#c11519" },
-          { name: "Fenrisian Grey", hex: "#6d94b3" },
-          { name: "Fire Dragon Bright", hex: "#f4874e" },
-          { name: "Flash Gitz Yellow", hex: "#ffed00" },
-          { name: "Flesh Tearers Red", hex: "#871818" },
-          { name: "Flayed One Flesh", hex: "#efcfa4" },
-          { name: "Fulgrim Pink", hex: "#f3afca" },
-          { name: "Gal Vorbak Red", hex: "#4b213c" },
-          { name: "Genestealer Purple", hex: "#7658a5" },
-          { name: "Gorthor Brown", hex: "#6a4c3d" },
-          { name: "Grey Seer", hex: "#a2a5a7" },
-          { name: "Hashut Copper", hex: "#b56b4a" },
-          { name: "Hoeth Blue", hex: "#4c78af" },
-          { name: "Incubi Darkness", hex: "#0c3640" },
-          { name: "Iron Hands Steel", hex: "#44505a" },
-          { name: "Iron Warriors", hex: "#414141" },
-          { name: "Jokaero Orange", hex: "#ed5b20" },
-          { name: "Kabalite Green", hex: "#018077" },
-          { name: "Karak Stone", hex: "#b7945c" },
-          { name: "Khorne Red", hex: "#650001" },
-          { name: "Kislev Flesh", hex: "#d1a570" },
-          { name: "Leadbelcher", hex: "#888d8f" },
-          { name: "Loren Forest", hex: "#4f6241" },
-          { name: "Lothern Blue", hex: "#2c9bcc" },
-          { name: "Macragge Blue", hex: "#0d407f" },
-          { name: "Mechanicus Standard Grey", hex: "#3d4b4d" },
-          { name: "Mephiston Red", hex: "#9a1115" },
-          { name: "Moot Green", hex: "#52b244" },
-          { name: "Mournfang Brown", hex: "#640909" },
-          { name: "Naggaroth Night", hex: "#392a47" },
-          { name: "Nihilakh Oxide", hex: "#65bab3" },
-          { name: "Nuln Oil", hex: "#14100e" },
-          { name: "Ogryn Camo", hex: "#9da94b" },
-          { name: "Pallid Wych Flesh", hex: "#cdc9c3" },
-          { name: "Phoenician Purple", hex: "#440052" },
-          { name: "Pink Horror", hex: "#8c3b5c" },
-          { name: "Rakarth Flesh", hex: "#9d9382" },
-          { name: "Reikland Fleshshade", hex: "#ca6c4d" },
-          { name: "Retributor Armour", hex: "#c39e3a" },
-          { name: "Rhinox Hide", hex: "#462f30" },
-          { name: "Russ Grey", hex: "#517087" },
-          { name: "Runefang Steel", hex: "#c4c7c9" },
-          { name: "Screamer Pink", hex: "#7a0e52" },
-          { name: "Screaming Skull", hex: "#d9d3a3" },
-          { name: "Seraphim Sepia", hex: "#d78e3e" },
-          { name: "Skavenblight Dinge", hex: "#47413b" },
-          { name: "Skrag Brown", hex: "#904e00" },
-          { name: "Slaanesh Grey", hex: "#8e8c97" },
-          { name: "Sotek Green", hex: "#0a6869" },
-          { name: "Squig Orange", hex: "#aa4b19" },
-          { name: "Steel Legion Drab", hex: "#585040" },
-          { name: "Stormhost Silver", hex: "#bcbbb7" },
-          { name: "Stormvermin Fur", hex: "#736b65" },
-          { name: "Straken Green", hex: "#5b7331" },
-          { name: "Sybarite Green", hex: "#17a166" },
-          { name: "Tallarn Sand", hex: "#a07441" },
-          { name: "Tau Light Ochre", hex: "#bc6b10" },
-          { name: "Temple Guard Blue", hex: "#239489" },
-          { name: "The Fang", hex: "#405b71" },
-          { name: "Thousand Sons Blue", hex: "#00506f" },
-          { name: "Thunderhawk Blue", hex: "#417074" },
-          { name: "Troll Slayer Orange", hex: "#f16c23" },
-          { name: "Ulthuan Grey", hex: "#c4ddd5" },
-          { name: "Ungor Flesh", hex: "#d6a766" },
-          { name: "Ushabti Bone", hex: "#bbae6f" },
-          { name: "Waaagh! Flesh", hex: "#0f4428" },
-          { name: "Warpfiend Grey", hex: "#66656e" },
-          { name: "Warplock Bronze", hex: "#475251" },
-          { name: "Warpstone Glow", hex: "#107e26" },
-          { name: "Wazdakka Red", hex: "#8c0a0c" },
-          { name: "White Scar", hex: "#ffffff" },
-          { name: "Wild Rider Red", hex: "#e82c23" },
-          { name: "Word Bearers Red", hex: "#620104" },
-          { name: "Wraithbone", hex: "#dbd1b2" },
-          { name: "XV-88", hex: "#6c4811" },
-          { name: "Xereus Purple", hex: "#47125a" },
-          { name: "Yriel Yellow", hex: "#ffda00" },
-          { name: "Zandri Dust", hex: "#9d8b5e" }
-        ],
-        vallejo: [
-          { name: "Dead White", hex: "#ffffff" },
-          { name: "White", hex: "#fcfcfc" },
-          { name: "Ivory", hex: "#fcfcdc" },
-          { name: "Off White", hex: "#fafcec" },
-          { name: "Pale Sand", hex: "#dcc484" },
-          { name: "Light Yellow", hex: "#fcf474" },
-          { name: "Deep Yellow", hex: "#fccc14" },
-          { name: "Gold Yellow", hex: "#fcac04" },
-          { name: "Orange Fire", hex: "#ec6404" },
-          { name: "Hot Orange", hex: "#fc6c04" },
-          { name: "Vermillion", hex: "#dc4404" },
-          { name: "Scarlet Red", hex: "#bc140c" },
-          { name: "Bloody Red", hex: "#840404" },
-          { name: "Terracotta", hex: "#ac5404" },
-          { name: "Dwarf Skin", hex: "#dc8c5c" },
-          { name: "Elf Skintone", hex: "#e4b494" },
-          { name: "Basic Skintone", hex: "#c49c7c" },
-          { name: "Dark Flesh", hex: "#6c4014" },
-          { name: "Beasty Brown", hex: "#54341c" },
-          { name: "Leather Brown", hex: "#644414" },
-          { name: "Tan", hex: "#bc7424" },
-          { name: "Khaki", hex: "#b4a48c" },
-          { name: "Desert Yellow", hex: "#c4a454" },
-          { name: "Earth", hex: "#7c5c34" },
-          { name: "Charred Brown", hex: "#3c2414" },
-          { name: "Bonewhite", hex: "#e4d8c4" },
-          { name: "Stonewall Grey", hex: "#b4aca4" },
-          { name: "Neutral Grey", hex: "#848484" },
-          { name: "Cold Grey", hex: "#5c6c7c" },
-          { name: "Wolf Grey", hex: "#4c5c6c" },
-          { name: "Sombre Grey", hex: "#3c4c5c" },
-          { name: "Heavy Charcoal", hex: "#2c2c34" },
-          { name: "Black", hex: "#0c0c0c" },
-          { name: "Dead Flesh", hex: "#c4c4a4" },
-          { name: "Undead Flesh", hex: "#8c947c" },
-          { name: "Camouflage Green", hex: "#7c8c54" },
-          { name: "Goblin Green", hex: "#5c8c34" },
-          { name: "Sick Green", hex: "#4c8c44" },
-          { name: "Scorpy Green", hex: "#549c14" },
-          { name: "Escorpena Green", hex: "#3c6c14" },
-          { name: "Foul Green", hex: "#246434" },
-          { name: "Dark Green", hex: "#0c4c14" },
-          { name: "Black Green", hex: "#04341c" },
-          { name: "Jade Green", hex: "#047464" },
-          { name: "Turquoise", hex: "#048c8c" },
-          { name: "Light Turquoise", hex: "#14acb4" },
-          { name: "Blue Green", hex: "#04545c" },
-          { name: "Heavy Blue", hex: "#143454" },
-          { name: "Stormy Blue", hex: "#1c4c6c" },
-          { name: "Electric Blue", hex: "#0454a4" },
-          { name: "Magic Blue", hex: "#0464b4" },
-          { name: "Ultramarine Blue", hex: "#0444a4" },
-          { name: "Dark Prussian Blue", hex: "#041c44" },
-          { name: "Night Blue", hex: "#040c24" },
-          { name: "Imperial Blue", hex: "#241454" },
-          { name: "Hexed Lichen", hex: "#4c1464" },
-          { name: "Violet", hex: "#541474" },
-          { name: "Warlord Purple", hex: "#8c14a4" },
-          { name: "Squid Pink", hex: "#ec749c" },
-          { name: "Magenta", hex: "#ac0464" },
-          { name: "Gory Red", hex: "#740404" }
-        ],
-        army_painter: [
-          { name: "Matt White", hex: "#ffffff" },
-          { name: "Ash Grey", hex: "#969794" },
-          { name: "Uniform Grey", hex: "#787a78" },
-          { name: "Dungeon Grey", hex: "#5c5b5c" },
-          { name: "Necromancer Cloak", hex: "#4f4d50" },
-          { name: "Matt Black", hex: "#0f0f0f" },
-          { name: "Fairy Dust", hex: "#fee8e8" },
-          { name: "Pixie Pink", hex: "#f17ba1" },
-          { name: "Warlock Purple", hex: "#8f3473" },
-          { name: "Alien Purple", hex: "#68426a" },
-          { name: "Toxic Mist", hex: "#6a3954" },
-          { name: "Crystal Blue", hex: "#2999b8" },
-          { name: "Electric Blue", hex: "#0c5a81" },
-          { name: "Deep Blue", hex: "#0a4466" },
-          { name: "Ultramarine Blue", hex: "#213f70" },
-          { name: "Voidshield Blue", hex: "#1e3a5f" },
-          { name: "Hydra Turquoise", hex: "#42a187" },
-          { name: "Mouldy Clothes", hex: "#718466" },
-          { name: "Jungle Green", hex: "#3c6942" },
-          { name: "Angel Green", hex: "#34644e" },
-          { name: "Greenskin", hex: "#5e7543" },
-          { name: "Goblin Green", hex: "#5b8441" },
-          { name: "Absolution Green", hex: "#1f4b24" },
-          { name: "Army Green", hex: "#424f31" },
-          { name: "Snake Scales", hex: "#72814f" },
-          { name: "Necrotic Flesh", hex: "#c1bb6b" },
-          { name: "Yeti Fur", hex: "#d9d4b8" },
-          { name: "Disgusting Slime", hex: "#729d2c" },
-          { name: "Venom Wyrm", hex: "#8bae3a" },
-          { name: "Lava Orange", hex: "#e64f0c" },
-          { name: "Mars Red", hex: "#db3b0c" },
-          { name: "Dragon Red", hex: "#be1b10" },
-          { name: "Pure Red", hex: "#ba1a1e" },
-          { name: "Vampire Red", hex: "#730a17" },
-          { name: "Chaotic Red", hex: "#5a0c13" },
-          { name: "Corpse Pale", hex: "#dbb497" },
-          { name: "Barbarian Flesh", hex: "#c4886e" },
-          { name: "Tanned Flesh", hex: "#b06e50" },
-          { name: "Wasteland Soil", hex: "#795a45" },
-          { name: "Oak Brown", hex: "#543e2d" },
-          { name: "Leather Brown", hex: "#6d4e34" },
-          { name: "Monster Brown", hex: "#5a3c28" },
-          { name: "Fur Brown", hex: "#3f2b1d" },
-          { name: "Mummy Robes", hex: "#b89a60" },
-          { name: "Daemonic Yellow", hex: "#fdca0c" },
-          { name: "Demonic Yellow", hex: "#f8c40c" },
-          { name: "Desert Yellow", hex: "#d7a33d" },
-          { name: "Skeleton Bone", hex: "#c6b27c" },
-          { name: "Arid Earth", hex: "#9e7652" },
-          { name: "Banshee Brown", hex: "#896240" },
-          { name: "Gun Metal", hex: "#555959" },
-          { name: "Plate Mail Metal", hex: "#818585" },
-          { name: "Shining Silver", hex: "#b8bab9" },
-          { name: "Weapon Bronze", hex: "#735d3a" },
-          { name: "Bright Gold", hex: "#8b7034" },
-          { name: "Greedy Gold", hex: "#a68239" },
-          { name: "Glitter Green", hex: "#4e6b5a" }
-        ],
-        pro_acryl: [
-          { name: "Bold Titanium White", hex: "#ffffff" },
-          { name: "Titanium White", hex: "#f8f8f8" },
-          { name: "Warm White", hex: "#f5f0e6" },
-          { name: "Ivory", hex: "#eae0c8" },
-          { name: "Light Neutral Grey", hex: "#a6a29c" },
-          { name: "Neutral Grey", hex: "#7a7672" },
-          { name: "Dark Neutral Grey", hex: "#4a4845" },
-          { name: "Coal Black", hex: "#1a1918" },
-          { name: "Dark Grey Blue", hex: "#3a4550" },
-          { name: "Grey Blue", hex: "#5a6b7a" },
-          { name: "Light Grey Blue", hex: "#8ca0ae" },
-          { name: "Pale Blue Grey", hex: "#c0d0da" },
-          { name: "Dark Warm Grey", hex: "#4a423a" },
-          { name: "Warm Grey", hex: "#7a6e62" },
-          { name: "Light Warm Grey", hex: "#a8988a" },
-          { name: "Pale Warm Grey", hex: "#d0c4b8" },
-          { name: "Burnt Red", hex: "#481a16" },
-          { name: "Burgundy", hex: "#5a1a1a" },
-          { name: "Dark Red", hex: "#7a1a16" },
-          { name: "Red", hex: "#b01a1a" },
-          { name: "Bright Red", hex: "#d02020" },
-          { name: "Orange", hex: "#e05a1a" },
-          { name: "Bright Orange", hex: "#f07030" },
-          { name: "Yellow Orange", hex: "#f0901a" },
-          { name: "Golden Yellow", hex: "#e0a01a" },
-          { name: "Yellow", hex: "#f0c01a" },
-          { name: "Bright Yellow", hex: "#f8d81a" },
-          { name: "Pale Yellow", hex: "#f8e898" },
-          { name: "Dark Brown", hex: "#3a2a1a" },
-          { name: "Burnt Umber", hex: "#4a3020" },
-          { name: "Mahogany", hex: "#5a3a28" },
-          { name: "Brown", hex: "#6a4830" },
-          { name: "Tan", hex: "#9a7050" },
-          { name: "Khaki", hex: "#b0906a" },
-          { name: "Sand", hex: "#d0b898" },
-          { name: "Bone", hex: "#e0d8c8" },
-          { name: "Dark Green", hex: "#1a3a20" },
-          { name: "Forest Green", hex: "#2a4a2a" },
-          { name: "Green", hex: "#3a6a3a" },
-          { name: "Bright Green", hex: "#4a8a4a" },
-          { name: "Light Green", hex: "#6aaa6a" },
-          { name: "Pale Green", hex: "#a0d0a0" },
-          { name: "Dark Blue Green", hex: "#1a3a3a" },
-          { name: "Blue Green", hex: "#2a5a5a" },
-          { name: "Turquoise", hex: "#3a8a8a" },
-          { name: "Light Turquoise", hex: "#5aaaaa" },
-          { name: "Dark Blue", hex: "#1a2a4a" },
-          { name: "Navy Blue", hex: "#2a3a5a" },
-          { name: "Blue", hex: "#3a5a8a" },
-          { name: "Bright Blue", hex: "#4a7aba" },
-          { name: "Light Blue", hex: "#7aaad0" },
-          { name: "Pale Blue", hex: "#a0c8e0" },
-          { name: "Dark Purple", hex: "#2a1a3a" },
-          { name: "Purple", hex: "#5a2a6a" },
-          { name: "Bright Purple", hex: "#7a3a8a" },
-          { name: "Violet", hex: "#6a3a7a" },
-          { name: "Magenta", hex: "#9a2a6a" },
-          { name: "Pink", hex: "#d07090" },
-          { name: "Light Pink", hex: "#e0a0b0" },
-          { name: "Pale Pink", hex: "#f0d0d8" },
-          { name: "Dark Skin", hex: "#4a3830" },
-          { name: "Tan Skin", hex: "#8a6a50" },
-          { name: "Light Skin", hex: "#c0a080" },
-          { name: "Pale Skin", hex: "#e0c8b0" }
-        ]
-      };
-
-      /******************************************************************
-       * STATE
-       ******************************************************************/
-      let currentView = 'matcher';
-
-      let uploadedImage = null;
-      let colorMarkers = [];
-      let markerIdCounter = 0;
-
-      let inventoryData = [];
-      let buylistData = [];
-
-      let selectedBrand = 'all';
-      let showOwnedOnly = false;
-      let searchQuery = '';
-
-      // Paint test state
-      let testImage = null;
-      let testUndoStack = [];
-      let isPainting = false;
-      let lastPt = null;
-
-      // Sellability features
-      let conversionBrand = null;         // null = multi brand; else single brand
-      let recipeOpenByMarkerId = {};      // { [markerId]: true/false }
-      let testBlendMode = 'source-over';  // canvas globalCompositeOperation
-      let brushHardness = 70;             // 0..100
-
-      /******************************************************************
-       * CONFIG (Canva SDK optional)
-       ******************************************************************/
-      const defaultConfig = {
-        app_title: 'Paint Matcher',
-        primary_color: '#6366f1',
-        secondary_color: '#8b5cf6',
-        background_color: '#1e1b4b',
-        text_color: '#ffffff',
-        accent_color: '#f59e0b'
-      };
-
-      let config = { ...defaultConfig };
-
-      /******************************************************************
-       * STORAGE ADAPTER
-       * - Uses dataSdk if available
-       * - Falls back to localStorage if not
-       ******************************************************************/
-      const STORAGE_KEY = 'paint_matcher_data_v1';
-
-      function genId() {
-        return 'id_' + Math.random().toString(16).slice(2) + Date.now().toString(16);
+  </div>
+  <script>
+  (() => {
+    'use strict';
+    // ====== Paste/expand your full paint lists here if you want (single-file) ======
+    // Format per paint: { name, hex, type }. Type is optional but recommended.
+    const PAINT_DATABASE_RAW = {"citadel": [{"name": "Mephiston Red", "hex": "#9b1f24", "type": "Base"}, {"name": "Evil Sunz Scarlet", "hex": "#c01c20", "type": "Layer"}, {"name": "Wild Rider Red", "hex": "#e14b3a", "type": "Layer"}, {"name": "Agrax Earthshade", "hex": "#5a3b28", "type": "Shade"}, {"name": "Nuln Oil", "hex": "#1b1b1b", "type": "Shade"}, {"name": "Leadbelcher", "hex": "#7a7d80", "type": "Metallic"}, {"name": "Retributor Armour", "hex": "#d1a000", "type": "Metallic"}, {"name": "Ushabti Bone", "hex": "#d6c9a3", "type": "Layer"}, {"name": "Rakarth Flesh", "hex": "#a8937a", "type": "Base"}, {"name": "Abaddon Black", "hex": "#000000", "type": "Base"}, {"name": "Corax White", "hex": "#f2f2f2", "type": "Base"}], "vallejo": [{"name": "Model Color Black", "hex": "#0a0a0a", "type": "Base"}, {"name": "Model Color White", "hex": "#f6f6f6", "type": "Base"}, {"name": "Model Color Red", "hex": "#b01e25", "type": "Layer"}, {"name": "Game Color Silver", "hex": "#b7b9bb", "type": "Metallic"}, {"name": "Game Color Sepia Wash", "hex": "#6b4a2f", "type": "Shade"}], "army_painter": [{"name": "Matt Black", "hex": "#111111", "type": "Base"}, {"name": "Matt White", "hex": "#f4f4f4", "type": "Base"}, {"name": "Pure Red", "hex": "#c81f2a", "type": "Layer"}, {"name": "Dark Tone", "hex": "#2b2b2b", "type": "Shade"}, {"name": "Bright Gold", "hex": "#caa23a", "type": "Metallic"}], "pro_acryl": [{"name": "Coal Black", "hex": "#1a1d22", "type": "Base"}, {"name": "Bold Titanium White", "hex": "#f7f7f7", "type": "Base"}, {"name": "Bold Pyrrole Red", "hex": "#c5162b", "type": "Layer"}, {"name": "Dark Wash", "hex": "#2b2b2b", "type": "Shade"}, {"name": "Bright Gold", "hex": "#caa23a", "type": "Metallic"}]};
+    const PaintType = Object.freeze({
+      Base:'Base', Layer:'Layer', Shade:'Shade', Metallic:'Metallic', Primer:'Primer', Technical:'Technical', Contrast:'Contrast', Other:'Other'
+    });
+    const BRAND_NAMES = {
+      citadel: 'Citadel',
+      vallejo: 'Vallejo',
+      army_painter: 'Army Painter',
+      pro_acryl: 'Pro Acryl'
+    };
+    function formatBrand(b) { return BRAND_NAMES[b] || b; }
+    // Normalize DB entries
+    const PAINT_DB = (() => {
+      const out = {};
+      for (const [brand, paints] of Object.entries(PAINT_DATABASE_RAW)) {
+        out[brand] = (paints || []).map(p => ({ brand, paint_name: p.name, hex: p.hex, type: p.type || PaintType.Layer, sku: p.sku || null }));
       }
-
-      const store = {
-        _mode: 'local', // 'sdk' or 'local'
-
-        async init() {
-          if (window.dataSdk && typeof window.dataSdk.init === 'function') {
-            const result = await window.dataSdk.init({
-              onDataChanged: (data) => {
-                const paints = data.filter(p => p.type === 'paint');
-                const buys = data.filter(p => p.type === 'buylist');
-
-                inventoryData = paints;
-                buylistData = buys;
-
-                renderInventory();
-                renderBuylist();
-                refreshTestInventoryPicker();
-                updateColorMatches();
+      return out;
+    })();
+    // Storage
+    const STORAGE_KEY = 'mpa_v2_singlefile';
+    const nowIso = () => new Date().toISOString();
+    const uid = () => 'id_' + Math.random().toString(16).slice(2) + Date.now().toString(16);
+    const state = (() => {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch { return null; }
+    })() || {
+      version: 2,
+      ui: { currentView:'matcher', invBrand:'all', invOwnedOnly:false, invSearch:'', recipeExpandedByMarkerId: {} },
+      settings: {
+        conversionBrand: null,
+        recipe: { enableOwnedSwap:true, allowCrossBrandOwnedSwap:true, strictTypes:true, recipeDeltaL:18 },
+        cart: { avoidOwnedPurchases:true, qtyPerUsage:true }
+      },
+      data: { inventory:[], buylist:[], projects:[], activeProjectId:null },
+      matcher: { uploadedImageDataUrl:null, markers:[], markerCounter:0 }
+    };
+    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    // DOM
+    const $ = (s, r=document) => r.querySelector(s);
+    const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+    function clamp(n,a,b) { return Math.max(a, Math.min(b, n)); }
+    function escapeHtml(s) { return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function decodePayload(node) {
+      const raw = node?.dataset?.payload;
+      if (!raw) return null;
+      try { return JSON.parse(decodeURIComponent(raw)); } catch { return null; }
+    }
+    // Toast
+    function showToast(msg, type='info') {
+      const old = document.querySelector('.toast-notification');
+      if (old) old.remove();
+      const t = document.createElement('div');
+      t.className = 'toast-notification fixed bottom-6 right-6 px-6 py-3 rounded-xl shadow-2xl text-white font-medium z-50 transform transition-all duration-300 translate-y-20 opacity-0';
+      t.classList.add(type==='success'?'bg-green-500':type==='error'?'bg-red-500':'bg-indigo-500');
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.classList.remove('translate-y-20','opacity-0'), 50);
+      setTimeout(() => { t.classList.add('translate-y-20','opacity-0'); setTimeout(() => t.remove(), 300); }, 3000);
+    }
+    // Modal
+    function openModal(title, bodyHtml, footerButtons=[]) {
+      $('#modal-title').textContent = title;
+      $('#modal-body').innerHTML = bodyHtml || '';
+      const f = $('#modal-footer'); f.innerHTML = '';
+      for (const b of footerButtons) {
+        const btn = document.createElement('button');
+        btn.className = b.className || 'px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50';
+        btn.textContent = b.label;
+        if (b.action) btn.dataset.action = b.action;
+        if (b.payload) btn.dataset.payload = JSON.stringify(b.payload);
+        f.appendChild(btn);
+      }
+      $('#modal').classList.remove('hidden'); $('#modal').classList.add('flex');
+    }
+    function closeModal() { $('#modal').classList.add('hidden'); $('#modal').classList.remove('flex'); }
+    // Color math
+    function hexToRgb(hex) {
+      const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex||'');
+      return m ? {r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16)} : {r:0,g:0,b:0};
+    }
+    function rgbToHex(r,g,b) { return '#' + [r,g,b].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+    function colorDistance(a,b) { return Math.sqrt((a.r-b.r)**2+(a.g-b.g)**2+(a.b-b.b)**2); }
+    function pctFromDistance(d) { return Math.round((1 - d / 441.67) * 100); }
+    function hexToHsl(hex) {
+      const {r,g,b} = hexToRgb(hex);
+      const R=r/255,G=g/255,B=b/255;
+      const max=Math.max(R,G,B), min=Math.min(R,G,B);
+      let h=0,s=0,l=(max+min)/2;
+      if (max!==min) {
+        const d=max-min;
+        s=l>0.5? d/(2-max-min) : d/(max+min);
+        switch(max) {
+          case R: h=(G-B)/d + (G<B?6:0); break;
+          case G: h=(B-R)/d + 2; break;
+          case B: h=(R-G)/d + 4; break;
+        }
+        h/=6;
+      }
+      return {h:h*360,s:s*100,l:l*100};
+    }
+    function hslToHex(h,s,l) {
+      h/=360; s/=100; l/=100;
+      const hue2rgb=(p,q,t)=>{ if(t<0)t+=1; if(t>1)t-=1;
+        if(t<1/6)return p+(q-p)*6*t; if(t<1/2)return q; if(t<2/3)return p+(q-p)*(2/3-t)*6; return p; };
+      let r,g,b;
+      if (s===0) r=g=b=l;
+      else {
+        const q=l<0.5? l*(1+s) : l+s-l*s;
+        const p=2*l-q;
+        r=hue2rgb(p,q,h+1/3); g=hue2rgb(p,q,h); b=hue2rgb(p,q,h-1/3);
+      }
+      return rgbToHex(Math.round(r*255),Math.round(g*255),Math.round(b*255));
+    }
+    function tweakLightness(hex, dL) {
+      const hsl=hexToHsl(hex);
+      return hslToHex(hsl.h, hsl.s, clamp(hsl.l + dL, 0, 100));
+    }
+    // Owned index
+    const paintKey = (brand, name) => `${brand}||${String(name||'').toLowerCase()}`;
+    const ownedIndex = () => {
+      const m=new Map();
+      for (const p of state.data.inventory) if (p.owned && (p.quantity||0)>0) m.set(paintKey(p.brand,p.paint_name), p);
+      return m;
+    };
+    const isOwned = (brand,name) => ownedIndex().has(paintKey(brand,name));
+    // Matching
+    function candidatesForBrand(brand, allow=null) {
+      const list = PAINT_DB[brand] || [];
+      if (!allow) return list;
+      return list.filter(p => allow.has(p.type));
+    }
+    function findClosest(targetHex, brandOrNull, limit=5, allow=null) {
+      const t = hexToRgb(targetHex);
+      const results=[];
+      const brands = brandOrNull ? [brandOrNull] : Object.keys(PAINT_DB);
+      for (const b of brands) for (const p of candidatesForBrand(b, allow)) {
+        const d=pctFromDistance(colorDistance(t, hexToRgb(p.hex)));
+        results.push({ brand:b, paint_name:p.paint_name, hex:p.hex, type:p.type, sku:p.sku||null, distance:d });
+      }
+      results.sort((a,b)=>b.distance-a.distance);
+      return results.slice(0,limit);
+    }
+    // Recipe generator (Base/Shade/Highlight), type-aware + owned swap
+    const ROLE={ Base:'Base', Shade:'Shade', Highlight:'Highlight' };
+    function roleAllow(role) {
+      if (!state.settings.recipe.strictTypes) return null;
+      if (role===ROLE.Shade) return new Set([PaintType.Shade, PaintType.Contrast, PaintType.Technical, PaintType.Layer, PaintType.Base]);
+      if (role===ROLE.Highlight) return new Set([PaintType.Layer, PaintType.Base, PaintType.Other]);
+      return new Set([PaintType.Base, PaintType.Layer, PaintType.Other]);
+    }
+    function pickOwnedSub(targetHex, role, recipeBrand) {
+      if (!state.settings.recipe.enableOwnedSwap) return null;
+      const owned = state.data.inventory.filter(p=>p.owned && (p.quantity||0)>0);
+      if (!owned.length) return null;
+      const allowCross = !!state.settings.recipe.allowCrossBrandOwnedSwap;
+      const allow = roleAllow(role);
+      const t = hexToRgb(targetHex);
+      let best=null, bestScore=-1;
+      for (const p of owned) {
+        if (!allowCross && p.brand!==recipeBrand) continue;
+        if (allow && !allow.has(p.type)) continue;
+        const score=pctFromDistance(colorDistance(t, hexToRgb(p.hex)));
+        if (score>bestScore) { bestScore=score; best=p; }
+      }
+      if (!best) return null;
+      return { brand:best.brand, paint_name:best.paint_name, hex:best.hex, type:best.type, sku:best.sku||null, distance:bestScore };
+    }
+    function recipeFor(hex, recipeBrand) {
+      const dL = clamp(parseInt(state.settings.recipe.recipeDeltaL,10)||18, 6, 35);
+      const baseTarget=hex;
+      const shadeTarget=tweakLightness(hex, -dL);
+      const hiTarget=tweakLightness(hex, +dL);
+      const basePick=findClosest(baseTarget, recipeBrand, 6, roleAllow(ROLE.Base))[0] || null;
+      const shadeList=findClosest(shadeTarget, recipeBrand, 6, roleAllow(ROLE.Shade));
+      const shadePick=(shadeList.slice().sort((a,b)=>((b.type===PaintType.Shade)-(a.type===PaintType.Shade)) || (b.distance-a.distance))[0]) || null;
+      const hiPick=findClosest(hiTarget, recipeBrand, 6, roleAllow(ROLE.Highlight))[0] || null;
+      const useOwnedIfGood=(owned,pick)=>{
+        if(!owned) return {pick, usedOwned:false};
+        if(!pick) return {pick:owned, usedOwned:true};
+        if(owned.distance >= pick.distance - 4) return {pick:owned, usedOwned:true};
+        return {pick, usedOwned:false, altOwned:owned};
+      };
+      return {
+        brand: recipeBrand,
+        base: useOwnedIfGood(pickOwnedSub(baseTarget, ROLE.Base, recipeBrand), basePick),
+        shade: useOwnedIfGood(pickOwnedSub(shadeTarget, ROLE.Shade, recipeBrand), shadePick),
+        highlight: useOwnedIfGood(pickOwnedSub(hiTarget, ROLE.Highlight, recipeBrand), hiPick),
+      };
+    }
+    // Buy list (dedupe + qty + avoid owned)
+    function addToBuySmart(item, meta={}) {
+      if (!item?.brand || !item?.paint_name) return {ok:false};
+      if (state.settings.cart.avoidOwnedPurchases && isOwned(item.brand, item.paint_name)) return {ok:false, skipped:'owned'};
+      const key = paintKey(item.brand, item.paint_name);
+      const existing = state.data.buylist.find(x => paintKey(x.brand,x.paint_name)===key);
+      const addQty = clamp(parseInt(meta.qtyAdd ?? 1,10)||1, 1, 99);
+      if (existing) {
+        existing.quantity = clamp((existing.quantity||1) + addQty, 1, 99);
+        existing.updated_at = nowIso();
+        existing.roles = Array.from(new Set([...(existing.roles||[]), ...(meta.role?[meta.role]:[])]));
+        existing.reasons = [...(existing.reasons||[]), ...(meta.reason?[meta.reason]:[])];
+        saveState();
+        return {ok:true, updated:true};
+      }
+      state.data.buylist.push({
+        id: uid(), kind:'buy', brand:item.brand, paint_name:item.paint_name, hex:item.hex, type:item.type||PaintType.Other, owned:false,
+        quantity:addQty, sku:item.sku||null, roles: meta.role?[meta.role]:[], reasons: meta.reason?[meta.reason]:[],
+        created_at: nowIso(), updated_at: nowIso()
+      });
+      saveState();
+      return {ok:true, created:true};
+    }
+    function addRecipeToBuy(markerId, markerHex) {
+      const recipeBrand = state.settings.conversionBrand || fallbackRecipeBrand(markerHex);
+      const rec = recipeFor(markerHex, recipeBrand);
+      const idx = state.matcher.markers.findIndex(m => m.id===markerId) + 1;
+      const pack = [
+        {role:ROLE.Base, p:rec.base.pick},
+        {role:ROLE.Shade, p:rec.shade.pick},
+        {role:ROLE.Highlight, p:rec.highlight.pick},
+      ].filter(x => x.p);
+      let added=0;
+      for (const it of pack) {
+        const r = addToBuySmart({brand:it.p.brand, paint_name:it.p.paint_name, hex:it.p.hex, type:it.p.type, sku:it.p.sku||null}, {
+          reason:`Recipe for Point ${idx}`, role:it.role, qtyAdd: state.settings.cart.qtyPerUsage ? 1 : 1
+        });
+        if (r.ok) added++;
+      }
+      return added;
+    }
+    // Projects
+    const activeProject = () => state.data.projects.find(p => p.id===state.data.activeProjectId) || null;
+    function renderHeaderProject() {
+      const p = activeProject();
+      $('#active-project-label').textContent = p ? `Project: ${p.name}` : 'No project';
+    }
+    function createProject(name) {
+      const p={ id:uid(), kind:'project', name, created_at:nowIso(), updated_at:nowIso(), model_image_data_url:null, markers:[], settings_snapshot:null };
+      state.data.projects.unshift(p);
+      state.data.activeProjectId = p.id;
+      saveState();
+      renderHeaderProject();
+    }
+    function saveSnapshot() {
+      const p = activeProject();
+      if (!p) return showToast('Create/select a project first', 'error');
+      p.updated_at = nowIso();
+      p.model_image_data_url = state.matcher.uploadedImageDataUrl;
+      p.markers = JSON.parse(JSON.stringify(state.matcher.markers || []));
+      p.settings_snapshot = JSON.parse(JSON.stringify(state.settings));
+      saveState();
+      showToast('Project snapshot saved', 'success');
+    }
+    function loadProject(id) {
+      const p = state.data.projects.find(x => x.id===id);
+      if (!p) return;
+      state.data.activeProjectId = p.id;
+      if (p.settings_snapshot) state.settings = JSON.parse(JSON.stringify(p.settings_snapshot));
+      if (p.model_image_data_url) {
+        state.matcher.uploadedImageDataUrl = p.model_image_data_url;
+        loadMatcherImageFromDataUrl(p.model_image_data_url, () => {
+          state.matcher.markers = JSON.parse(JSON.stringify(p.markers || []));
+          state.matcher.markerCounter = (state.matcher.markers.reduce((mx,m)=>Math.max(mx,m.id),0))||0;
+          renderMarkers(); updateColorMatches();
+        });
+      } else {
+        state.matcher.markers = JSON.parse(JSON.stringify(p.markers || []));
+        state.matcher.markerCounter = (state.matcher.markers.reduce((mx,m)=>Math.max(mx,m.id),0))||0;
+        renderMarkers(); updateColorMatches();
+      }
+      saveState();
+      renderHeaderProject();
+      showToast('Project loaded', 'success');
+    }
+    function openProjectsModal() {
+      const list = state.data.projects.slice();
+      const body = `
+        <div class="space-y-4">
+          <div class="p-3 rounded-xl bg-gray-50 border border-gray-200">
+            <div class="font-semibold text-gray-900">Create new project</div>
+            <div class="mt-2 flex gap-2">
+              <input id="proj-new-name" type="text" placeholder="e.g., Blood Angels Intercessor"
+                     class="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+              <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700"
+                      data-action="proj-create">Create</button>
+            </div>
+          </div>
+          <div class="p-3 rounded-xl bg-gray-50 border border-gray-200">
+            <div class="flex items-center justify-between">
+              <div class="font-semibold text-gray-900">Your projects</div>
+              <div class="text-xs text-gray-500">${list.length} saved</div>
+            </div>
+            <div class="mt-3 space-y-2 max-h-64 overflow-auto scrollbar-thin">
+              ${
+                list.length ? list.map(p => `
+                  <div class="p-3 rounded-xl bg-white border border-gray-200 flex items-center justify-between gap-2">
+                    <div>
+                      <div class="font-semibold text-gray-800">${escapeHtml(p.name)}</div>
+                      <div class="text-xs text-gray-500">${new Date(p.updated_at||p.created_at).toLocaleString()}</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <button class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:opacity-90"
+                              data-action="proj-load" data-payload="${encodeURIComponent(JSON.stringify({id:p.id}))}">Load</button>
+                      <button class="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200"
+                              data-action="proj-delete" data-payload="${encodeURIComponent(JSON.stringify({id:p.id}))}">Delete</button>
+                    </div>
+                  </div>
+                `).join('') : `<div class="text-sm text-gray-500">No projects yet.</div>`
               }
-            });
-
-            if (result && result.isOk) {
-              this._mode = 'sdk';
-              return;
-            }
-          }
-
-          // local fallback
-          this._mode = 'local';
-          const raw = localStorage.getItem(STORAGE_KEY);
-          const data = raw ? JSON.parse(raw) : [];
-          inventoryData = data.filter(p => p.type === 'paint');
-          buylistData = data.filter(p => p.type === 'buylist');
-          renderInventory();
-          renderBuylist();
-          refreshTestInventoryPicker();
-          updateColorMatches();
-        },
-
-        _readLocal() {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          return raw ? JSON.parse(raw) : [];
-        },
-
-        _writeLocal(all) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-          inventoryData = all.filter(p => p.type === 'paint');
-          buylistData = all.filter(p => p.type === 'buylist');
-          renderInventory();
-          renderBuylist();
-          refreshTestInventoryPicker();
-          updateColorMatches();
-        },
-
-        async create(obj) {
-          if (this._mode === 'sdk') return window.dataSdk.create(obj);
-          const all = this._readLocal();
-          const record = { ...obj, __backendId: genId() };
-          all.push(record);
-          this._writeLocal(all);
-          return { isOk: true, value: record };
-        },
-
-        async update(obj) {
-          if (this._mode === 'sdk') return window.dataSdk.update(obj);
-          const all = this._readLocal();
-          const idx = all.findIndex(x => x.__backendId === obj.__backendId);
-          if (idx === -1) return { isOk: false };
-          all[idx] = { ...all[idx], ...obj };
-          this._writeLocal(all);
-          return { isOk: true, value: all[idx] };
-        },
-
-        async delete(obj) {
-          if (this._mode === 'sdk') return window.dataSdk.delete(obj);
-          const all = this._readLocal();
-          const next = all.filter(x => x.__backendId !== obj.__backendId);
-          this._writeLocal(next);
-          return { isOk: true };
-        }
-      };
-
-      /******************************************************************
-       * INIT
-       ******************************************************************/
-      async function initApp() {
-        // Optional Element SDK init (safe if missing)
-        if (window.elementSdk && typeof window.elementSdk.init === 'function') {
-          window.elementSdk.init({
-            defaultConfig,
-            onConfigChange: async (newConfig) => {
-              config = { ...config, ...newConfig };
-              applyConfig();
-            },
-            mapToCapabilities: (cfg) => ({
-              recolorables: [
-                { get: () => cfg.primary_color || defaultConfig.primary_color,
-                  set: (v) => { cfg.primary_color = v; window.elementSdk.setConfig({ primary_color: v }); } },
-                { get: () => cfg.secondary_color || defaultConfig.secondary_color,
-                  set: (v) => { cfg.secondary_color = v; window.elementSdk.setConfig({ secondary_color: v }); } },
-                { get: () => cfg.background_color || defaultConfig.background_color,
-                  set: (v) => { cfg.background_color = v; window.elementSdk.setConfig({ background_color: v }); } },
-                { get: () => cfg.text_color || defaultConfig.text_color,
-                  set: (v) => { cfg.text_color = v; window.elementSdk.setConfig({ text_color: v }); } },
-                { get: () => cfg.accent_color || defaultConfig.accent_color,
-                  set: (v) => { cfg.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); } }
-              ],
-              borderables: [],
-              fontEditable: undefined,
-              fontSizeable: undefined
-            }),
-            mapToEditPanelValues: (cfg) => new Map([
-              ['app_title', cfg.app_title || defaultConfig.app_title]
-            ])
-          });
-        }
-
-        setupEventListeners();
-        applyConfig();
-        await store.init();
-      }
-
-      function applyConfig() {
-        document.getElementById('app-title').textContent = config.app_title || defaultConfig.app_title;
-      }
-
-      /******************************************************************
-       * EVENTS
-       ******************************************************************/
-      function setupEventListeners() {
-        // Tabs
-        document.getElementById('tab-matcher').addEventListener('click', () => switchView('matcher'));
-        document.getElementById('tab-test').addEventListener('click', () => switchView('test'));
-        document.getElementById('tab-inventory').addEventListener('click', () => switchView('inventory'));
-        document.getElementById('tab-buylist').addEventListener('click', () => switchView('buylist'));
-
-        // Upload zone drag/drop
-        const uploadZone = document.getElementById('upload-zone');
-        const imageUpload = document.getElementById('image-upload');
-
-        uploadZone.addEventListener('dragover', (e) => {
-          e.preventDefault();
-          uploadZone.classList.add('border-purple-500');
-        });
-        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('border-purple-500'));
-        uploadZone.addEventListener('drop', (e) => {
-          e.preventDefault();
-          uploadZone.classList.remove('border-purple-500');
-          const file = e.dataTransfer.files[0];
-          if (file && file.type.startsWith('image/')) handleImageUpload(file);
-        });
-
-        imageUpload.addEventListener('change', (e) => {
-          if (e.target.files && e.target.files[0]) handleImageUpload(e.target.files[0]);
-        });
-
-        // Image controls
-        document.getElementById('add-marker-btn').addEventListener('click', addColorMarker);
-        document.getElementById('clear-image-btn').addEventListener('click', clearImage);
-        document.getElementById('export-matches-btn').addEventListener('click', exportMatchesToPDF);
-        document.getElementById('add-all-buylist-btn').addEventListener('click', addAllMatchesToBuylist);
-
-        // Inventory filters
-        document.querySelectorAll('.brand-pill').forEach(btn => btn.addEventListener('click', handleBrandClick));
-        document.getElementById('search-paints').addEventListener('input', (e) => {
-          searchQuery = (e.target.value || '').toLowerCase();
-          renderInventory();
-        });
-        document.getElementById('show-owned-only').addEventListener('click', () => {
-          showOwnedOnly = !showOwnedOnly;
-          document.getElementById('owned-toggle-icon').textContent = showOwnedOnly ? '☑' : '☐';
-          renderInventory();
-        });
-        document.getElementById('add-paint-btn').addEventListener('click', addPaintToInventory);
-
-        // Buy list
-        document.getElementById('add-buylist-btn').addEventListener('click', addPaintToBuylist);
-        document.getElementById('buylist-paint-color').addEventListener('input', (e) => {
-          document.getElementById('buylist-color-preview').style.backgroundColor = e.target.value;
-        });
-
-        // Test paint
-        document.getElementById('test-paint-color').addEventListener('input', (e) => {
-          document.getElementById('test-paint-preview').style.backgroundColor = e.target.value;
-        });
-
-        const testUploadBtn = document.getElementById('test-upload-btn');
-        const testUploadInput = document.getElementById('test-image-upload');
-        testUploadBtn.addEventListener('click', () => testUploadInput.click());
-        testUploadInput.addEventListener('change', (e) => {
-          if (e.target.files && e.target.files[0]) handleTestImageUpload(e.target.files[0]);
-          testUploadInput.value = '';
-        });
-
-        document.getElementById('test-inv-pick').addEventListener('change', (e) => {
-          const id = e.target.value;
-          if (!id) return;
-          const paint = inventoryData.find(p => p.__backendId === id);
-          if (!paint) return;
-          document.getElementById('test-paint-color').value = paint.hex_color || '#c21f30';
-          document.getElementById('test-paint-preview').style.backgroundColor = paint.hex_color || '#c21f30';
-        });
-
-        document.getElementById('brush-size').addEventListener('input', updatePaintCursor);
-        document.getElementById('brush-opacity').addEventListener('input', updatePaintCursor);
-
-        document.getElementById('test-undo-btn').addEventListener('click', testUndo);
-        document.getElementById('test-clear-paint-btn').addEventListener('click', testClearPaint);
-
-        const stage = document.getElementById('test-stage');
-        stage.addEventListener('mousemove', testOnMove);
-        stage.addEventListener('mouseleave', () => {
-          const c = document.getElementById('test-cursor');
-          c.style.display = 'none';
-        });
-
-        stage.addEventListener('mousedown', testStartPaint);
-        window.addEventListener('mouseup', testStopPaint);
-
-        // Advanced modal open/close
-        document.getElementById('test-advanced-btn').addEventListener('click', () => {
-          const m = document.getElementById('advanced-modal');
-          m.classList.remove('hidden');
-          m.classList.add('flex');
-        });
-
-        document.getElementById('advanced-modal').addEventListener('click', (e) => {
-          if (e.target && e.target.getAttribute('data-adv-close') === '1') {
-            const m = document.getElementById('advanced-modal');
-            m.classList.add('hidden');
-            m.classList.remove('flex');
-          }
-        });
-
-        // Blend mode
-        document.getElementById('test-blend-mode').addEventListener('change', (e) => {
-          testBlendMode = e.target.value || 'source-over';
-        });
-
-        // Hardness
-        document.getElementById('brush-hardness').addEventListener('input', (e) => {
-          brushHardness = parseInt(e.target.value, 10);
-          document.getElementById('hardness-label').textContent = `${brushHardness}%`;
-        });
-
-        // Conversion mode
-        document.getElementById('conv-off').addEventListener('click', () => setConversionBrand(null));
-        document.querySelectorAll('[data-conv]').forEach(btn => {
-          btn.addEventListener('click', () => setConversionBrand(btn.getAttribute('data-conv')));
-        });
-
-        // Resize redraw
-        window.addEventListener('resize', () => {
-          if (uploadedImage) drawImage();
-          if (testImage) drawTestImage();
-        });
-      }
-
-      function setConversionBrand(brandOrNull) {
-        conversionBrand = brandOrNull || null;
-        const label = document.getElementById('conv-label');
-        label.textContent = conversionBrand ? formatBrandName(conversionBrand) : 'OFF';
-        showToast(conversionBrand ? `Conversion mode: ${formatBrandName(conversionBrand)}` : 'Conversion mode off', 'info');
-        updateColorMatches();
-      }
-
-      /******************************************************************
-       * VIEW SWITCH
-       ******************************************************************/
-      function switchView(view) {
-        currentView = view;
-
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-          btn.classList.remove('tab-active');
-          btn.classList.add('text-white/70');
-        });
-
-        document.getElementById('view-matcher').classList.add('hidden');
-        document.getElementById('view-test').classList.add('hidden');
-        document.getElementById('view-inventory').classList.add('hidden');
-        document.getElementById('view-buylist').classList.add('hidden');
-
-        if (view === 'matcher') {
-          activateTab('tab-matcher');
-          document.getElementById('view-matcher').classList.remove('hidden');
-        } else if (view === 'test') {
-          activateTab('tab-test');
-          document.getElementById('view-test').classList.remove('hidden');
-          refreshTestInventoryPicker();
-          if (testImage) drawTestImage();
-        } else if (view === 'inventory') {
-          activateTab('tab-inventory');
-          document.getElementById('view-inventory').classList.remove('hidden');
-          renderInventory();
-        } else if (view === 'buylist') {
-          activateTab('tab-buylist');
-          document.getElementById('view-buylist').classList.remove('hidden');
-          renderBuylist();
-        }
-      }
-
-      function activateTab(tabId) {
-        const tab = document.getElementById(tabId);
-        tab.classList.add('tab-active');
-        tab.classList.remove('text-white/70');
-      }
-
-      /******************************************************************
-       * IMAGE UPLOAD + MARKERS (Matcher)
-       ******************************************************************/
-      function handleImageUpload(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          uploadedImage = new Image();
-          uploadedImage.onload = () => {
-            document.getElementById('upload-zone').classList.add('hidden');
-            document.getElementById('image-container').classList.remove('hidden');
-
-            requestAnimationFrame(() => {
-              drawImage();
-              colorMarkers = [];
-              markerIdCounter = 0;
-              recipeOpenByMarkerId = {};
-              document.getElementById('markers-container').innerHTML = '';
-              updateColorMatches();
-            });
-          };
-          uploadedImage.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-
-        document.getElementById('image-upload').value = '';
-      }
-
-      function drawImage() {
-        const canvas = document.getElementById('image-canvas');
-        const ctx = canvas.getContext('2d');
-        const container = canvas.parentElement;
-
-        const w = container.clientWidth || 1;
-        const h = container.clientHeight || 1;
-
-        canvas.width = w;
-        canvas.height = h;
-
-        const scale = Math.min(canvas.width / uploadedImage.width, canvas.height / uploadedImage.height);
-        const x = (canvas.width - uploadedImage.width * scale) / 2;
-        const y = (canvas.height - uploadedImage.height * scale) / 2;
-
-        ctx.fillStyle = '#1f2937';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(uploadedImage, x, y, uploadedImage.width * scale, uploadedImage.height * scale);
-      }
-
-      function clearImage() {
-        uploadedImage = null;
-        colorMarkers = [];
-        markerIdCounter = 0;
-        recipeOpenByMarkerId = {};
-
-        document.getElementById('upload-zone').classList.remove('hidden');
-        document.getElementById('image-container').classList.add('hidden');
-        document.getElementById('markers-container').innerHTML = '';
-        updateColorMatches();
-      }
-
-      function addColorMarker() {
-        if (!uploadedImage) {
-          showToast('Upload an image first', 'error');
-          return;
-        }
-
-        const container = document.getElementById('markers-container');
-        const id = ++markerIdCounter;
-
-        const marker = document.createElement('div');
-        marker.className = 'color-marker absolute w-8 h-8 rounded-full border-4 border-white shadow-lg';
-        marker.style.left = '50%';
-        marker.style.top = '50%';
-        marker.style.transform = 'translate(-50%, -50%)';
-        marker.style.backgroundColor = '#888888';
-        marker.dataset.id = id;
-
-        const label = document.createElement('span');
-        label.className = 'absolute -top-6 left-1/2 -translate-x-1/2 bg-white text-gray-800 text-xs font-bold px-2 py-0.5 rounded-full shadow';
-        label.textContent = colorMarkers.length + 1;
-        marker.appendChild(label);
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 flex items-center justify-center';
-        deleteBtn.innerHTML = '×';
-        deleteBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          removeMarker(id);
-        });
-        marker.appendChild(deleteBtn);
-
-        container.appendChild(marker);
-        makeDraggable(marker);
-
-        colorMarkers.push({ id, x: 50, y: 50, color: '#888888' });
-
-        setTimeout(() => sampleColorAtMarker(marker), 50);
-      }
-
-      function makeDraggable(marker) {
-        let isDragging = false;
-        let startX, startY, startLeft, startTop;
-
-        marker.addEventListener('mousedown', (e) => {
-          if (e.target.tagName === 'BUTTON') return;
-          isDragging = true;
-          startX = e.clientX;
-          startY = e.clientY;
-          startLeft = marker.offsetLeft;
-          startTop = marker.offsetTop;
-          marker.style.cursor = 'grabbing';
-          marker.style.zIndex = '100';
-        });
-
-        document.addEventListener('mousemove', (e) => {
-          if (!isDragging) return;
-          const container = document.getElementById('markers-container');
-          const rect = container.getBoundingClientRect();
-
-          let newLeft = startLeft + (e.clientX - startX);
-          let newTop = startTop + (e.clientY - startY);
-
-          newLeft = Math.max(0, Math.min(rect.width - 32, newLeft));
-          newTop = Math.max(0, Math.min(rect.height - 32, newTop));
-
-          marker.style.left = newLeft + 'px';
-          marker.style.top = newTop + 'px';
-          marker.style.transform = 'none';
-
-          sampleColorAtMarker(marker);
-        });
-
-        document.addEventListener('mouseup', () => {
-          if (isDragging) {
-            isDragging = false;
-            marker.style.cursor = 'grab';
-            marker.style.zIndex = '';
-            updateColorMatches();
-          }
-        });
-      }
-
-      function sampleColorAtMarker(marker) {
-        const canvas = document.getElementById('image-canvas');
-        const ctx = canvas.getContext('2d');
-        const container = document.getElementById('markers-container');
-        const rect = container.getBoundingClientRect();
-
-        const x = marker.offsetLeft + 16;
-        const y = marker.offsetTop + 16;
-
-        try {
-          const pixel = ctx.getImageData(x, y, 1, 1).data;
-          const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
-          marker.style.backgroundColor = hex;
-
-          const id = parseInt(marker.dataset.id);
-          const markerData = colorMarkers.find(m => m.id === id);
-          if (markerData) {
-            markerData.color = hex;
-            markerData.x = (x / rect.width) * 100;
-            markerData.y = (y / rect.height) * 100;
-          }
-        } catch (e) {}
-
-        updateColorMatches();
-      }
-
-      function removeMarker(id) {
-        colorMarkers = colorMarkers.filter(m => m.id !== id);
-        delete recipeOpenByMarkerId[id];
-
-        const marker = document.querySelector(`[data-id="${id}"]`);
-        if (marker) marker.remove();
-
-        const markers = document.querySelectorAll('.color-marker');
-        markers.forEach((m, i) => {
-          const label = m.querySelector('span');
-          if (label) label.textContent = i + 1;
-        });
-
-        updateColorMatches();
-      }
-
-      /******************************************************************
-       * SELLABILITY HELPERS (owned + recipe + conversion)
-       ******************************************************************/
-      function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
-
-      function hexToHsl(hex) {
-        const { r, g, b } = hexToRgb(hex);
-        const R = r / 255, G = g / 255, B = b / 255;
-        const max = Math.max(R, G, B), min = Math.min(R, G, B);
-        let h = 0, s = 0, l = (max + min) / 2;
-
-        if (max !== min) {
-          const d = max - min;
-          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-          switch (max) {
-            case R: h = (G - B) / d + (G < B ? 6 : 0); break;
-            case G: h = (B - R) / d + 2; break;
-            case B: h = (R - G) / d + 4; break;
-          }
-          h /= 6;
-        }
-        return { h: h * 360, s: s * 100, l: l * 100 };
-      }
-
-      function hslToHex(h, s, l) {
-        h /= 360; s /= 100; l /= 100;
-        const hue2rgb = (p, q, t) => {
-          if (t < 0) t += 1;
-          if (t > 1) t -= 1;
-          if (t < 1/6) return p + (q - p) * 6 * t;
-          if (t < 1/2) return q;
-          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-          return p;
-        };
-        let r, g, b;
-        if (s === 0) {
-          r = g = b = l;
-        } else {
-          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-          const p = 2 * l - q;
-          r = hue2rgb(p, q, h + 1/3);
-          g = hue2rgb(p, q, h);
-          b = hue2rgb(p, q, h - 1/3);
-        }
-        return rgbToHex(Math.round(r * 255), Math.round(g * 255), Math.round(b * 255));
-      }
-
-      function tweakLightness(hex, deltaL) {
-        const hsl = hexToHsl(hex);
-        const nl = clamp(hsl.l + deltaL, 0, 100);
-        return hslToHex(hsl.h, hsl.s, nl);
-      }
-
-      function paintKey(brand, name) {
-        return `${brand}||${String(name).toLowerCase()}`;
-      }
-
-      function buildOwnedIndex() {
-        const owned = new Map();
-        inventoryData
-          .filter(p => p.type === 'paint' && p.owned)
-          .forEach(p => owned.set(paintKey(p.brand, p.paint_name), p));
-        return owned;
-      }
-
-      function findClosestInBrand(targetHex, brand, limit = 5) {
-        const targetRgb = hexToRgb(targetHex);
-        const paints = PAINT_DATABASE[brand] || [];
-        const list = paints.map(p => {
-          const d = colorDistance(targetRgb, hexToRgb(p.hex));
-          return { ...p, brand, distance: Math.round((1 - d / 441.67) * 100) };
-        });
-        return list.sort((a,b) => b.distance - a.distance).slice(0, limit);
-      }
-
-      function findClosestOwnedPaint(targetHex) {
-        const owned = inventoryData.filter(p => p.type === 'paint' && p.owned);
-        if (!owned.length) return null;
-
-        const t = hexToRgb(targetHex);
-        let best = null;
-        let bestScore = -Infinity;
-
-        for (const p of owned) {
-          const d = colorDistance(t, hexToRgb(p.hex_color || '#000000'));
-          const score = (1 - d / 441.67) * 100;
-          if (score > bestScore) { bestScore = score; best = p; }
-        }
-
-        if (!best) return null;
-        return {
-          brand: best.brand,
-          name: best.paint_name,
-          hex: best.hex_color,
-          distance: Math.round(bestScore),
-          __ownedRecord: best
-        };
-      }
-
-      function recipeForTarget(targetHex, brand) {
-        const base = findClosestInBrand(targetHex, brand, 1)[0] || null;
-        const shadeTarget = tweakLightness(targetHex, -18);
-        const hiTarget = tweakLightness(targetHex, +18);
-        const shade = findClosestInBrand(shadeTarget, brand, 1)[0] || null;
-        const highlight = findClosestInBrand(hiTarget, brand, 1)[0] || null;
-        return { base, shade, highlight };
-      }
-
-      function badgeForDistance(dist) {
-        if (dist >= 95) return { label: 'Exact', cls: 'bg-green-100 text-green-700' };
-        if (dist >= 88) return { label: 'Close', cls: 'bg-indigo-100 text-indigo-700' };
-        return { label: 'Alt', cls: 'bg-gray-100 text-gray-600' };
-      }
-
-      /******************************************************************
-       * MATCHES (click suggestion -> add to inventory/buy list)
-       ******************************************************************/
-      function updateColorMatches() {
-        const container = document.getElementById('color-matches');
-        const exportBtn = document.getElementById('export-matches-btn');
-        const addAllBtn = document.getElementById('add-all-buylist-btn');
-
-        if (colorMarkers.length === 0) {
-          exportBtn.classList.add('hidden');
-          addAllBtn.classList.add('hidden');
-          container.innerHTML = `
-            <div class="text-center py-12 text-gray-400">
-              <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/>
-                </svg>
-              </div>
-              <p class="font-medium">No colors selected</p>
-              <p class="text-sm mt-1">Upload an image and add color points</p>
             </div>
-          `;
-          return;
-        }
-
-        exportBtn.classList.remove('hidden');
-        addAllBtn.classList.remove('hidden');
-
-        const ownedIndex = buildOwnedIndex();
-
-        const escapeQuotes = (s) => String(s).replace(/'/g, "\\'");
-
-        const renderPick = (m) => {
-          const owned = ownedIndex.has(paintKey(m.brand, m.name));
-          const badge = badgeForDistance(m.distance);
-          return `
-            <div class="flex items-center gap-2 p-2 bg-white rounded-lg hover:shadow-md transition cursor-pointer"
-                 onclick="showAddDialog('${m.brand}', '${escapeQuotes(m.name)}', '${m.hex}')">
-              <div class="w-6 h-6 rounded-md shadow-sm flex-shrink-0" style="background-color:${m.hex}"></div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2">
-                  <p class="text-sm font-medium text-gray-800 truncate">${m.name}</p>
-                  <span class="text-[10px] px-2 py-0.5 rounded-full ${badge.cls} font-semibold">${badge.label}</span>
-                  ${owned ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">Owned</span>` : ''}
-                </div>
-                <p class="text-xs text-gray-500">${formatBrandName(m.brand)}</p>
-              </div>
-              <span class="text-xs text-indigo-600 font-medium">${m.distance}%</span>
-            </div>
-          `;
-        };
-
-        const renderRecipePick = (m, label) => {
-          if (!m) {
-            return `
-              <div class="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100">
-                <div class="w-6 h-6 rounded-md bg-gray-100 flex-shrink-0"></div>
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-gray-800">${label}</p>
-                  <p class="text-xs text-gray-500">No suggestion</p>
-                </div>
-              </div>
-            `;
-          }
-          const owned = ownedIndex.has(paintKey(m.brand, m.name));
-          return `
-            <div class="flex items-center gap-2 p-2 bg-white rounded-lg hover:shadow-md transition cursor-pointer"
-                 onclick="showAddDialog('${m.brand}', '${escapeQuotes(m.name)}', '${m.hex}')">
-              <div class="w-6 h-6 rounded-md shadow-sm flex-shrink-0" style="background-color:${m.hex}"></div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2">
-                  <p class="text-sm font-medium text-gray-800">${label}: <span class="truncate">${m.name}</span></p>
-                  ${owned ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">Owned</span>` : ''}
-                </div>
-                <p class="text-xs text-gray-500">${formatBrandName(m.brand)} • ${m.hex}</p>
-              </div>
-              <span class="text-xs text-indigo-600 font-medium">${m.distance}%</span>
-            </div>
-          `;
-        };
-
-        container.innerHTML = colorMarkers.map((marker, index) => {
-          const matches = findClosestPaints(marker.color);
-          const ownedAlt = findClosestOwnedPaint(marker.color);
-
-          const recipeBrand = conversionBrand || (matches[0]?.brand || 'citadel');
-          const isRecipeOpen = !!recipeOpenByMarkerId[marker.id];
-          const recipe = recipeForTarget(marker.color, recipeBrand);
-
-          return `
-            <div class="bg-gray-50 rounded-xl p-4">
-              <div class="flex items-center justify-between mb-3">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-lg shadow-inner border-2 border-white" style="background-color:${marker.color}"></div>
-                  <div>
-                    <p class="font-semibold text-gray-800">Point ${index + 1}</p>
-                    <p class="text-xs text-gray-500 font-mono uppercase">${marker.color}</p>
-                  </div>
-                </div>
-
-                <button class="text-xs font-medium text-indigo-600 hover:text-indigo-700"
-                  onclick="toggleRecipe(${marker.id})">
-                  ${isRecipeOpen ? 'Hide Recipe' : 'Show Recipe'}
-                </button>
-              </div>
-
-              ${ownedAlt ? `
-                <div class="mb-3 p-3 bg-white rounded-lg border border-amber-100">
-                  <div class="flex items-center gap-2">
-                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">Owned alternative</span>
-                    <span class="text-xs text-gray-500">Closest paint you already have</span>
-                  </div>
-                  <div class="mt-2 flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-md shadow-sm flex-shrink-0" style="background-color:${ownedAlt.hex}"></div>
-                    <div class="flex-1 min-w-0">
-                      <p class="text-sm font-medium text-gray-800 truncate">${ownedAlt.name}</p>
-                      <p class="text-xs text-gray-500">${formatBrandName(ownedAlt.brand)} • ${ownedAlt.hex}</p>
-                    </div>
-                    <span class="text-xs text-indigo-600 font-medium">${ownedAlt.distance}%</span>
-                  </div>
-                </div>
-              ` : ''}
-
-              ${isRecipeOpen ? `
-                <div class="mb-3">
-                  <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                    Recipe (${formatBrandName(recipeBrand)}) • Base / Shade / Highlight
-                  </div>
-                  <div class="space-y-2">
-                    ${renderRecipePick(recipe.base, 'Base')}
-                    ${renderRecipePick(recipe.shade, 'Shade')}
-                    ${renderRecipePick(recipe.highlight, 'Highlight')}
-                  </div>
-                </div>
-              ` : ''}
-
-              <div class="space-y-2">
-                ${matches.map(renderPick).join('')}
-              </div>
-            </div>
-          `;
-        }).join('');
-      }
-
-      window.toggleRecipe = function(markerId) {
-        recipeOpenByMarkerId[markerId] = !recipeOpenByMarkerId[markerId];
-        updateColorMatches();
-      };
-
-      window.showAddDialog = function(brand, name, hex) {
-        const dialog = document.createElement('div');
-        dialog.className = 'fixed inset-0 z-50 flex items-center justify-center';
-
-        dialog.innerHTML = `
-          <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-close="1"></div>
-          <div class="relative bg-white rounded-2xl shadow-2xl p-8 max-w-sm mx-4 glass-card">
-            <div class="flex items-center gap-4 mb-6">
-              <div class="w-16 h-16 rounded-xl shadow-lg flex-shrink-0" style="background-color:${hex}"></div>
+          </div>
+        </div>
+      `;
+      openModal('Project Profiles', body, [{label:'Close', action:'modal-close'}]);
+    }
+    // Advanced modal: brand lock + recipe + cart + export
+    function openAdvancedModal() {
+      const conv = state.settings.conversionBrand;
+      const body = `
+        <div class="space-y-4">
+          <div class="p-3 rounded-xl bg-gray-50 border border-gray-200">
+            <div class="flex items-center justify-between">
               <div>
-                <h3 class="font-semibold text-gray-800">${name}</h3>
-                <p class="text-sm text-gray-500">${formatBrandName(brand)}</p>
-                <p class="text-xs text-gray-400 font-mono uppercase mt-1">${hex}</p>
+                <div class="font-semibold text-gray-900">Brand Lock (Conversion Mode)</div>
+                <div class="text-xs text-gray-500">Force matches + recipes to a single brand.</div>
               </div>
+              <div class="text-xs font-mono px-2 py-1 rounded bg-white border">${conv ? escapeHtml(formatBrand(conv)) : 'OFF'}</div>
             </div>
-
-            <p class="text-gray-600 mb-6 font-medium">Where would you like to add this paint?</p>
-
-            <div class="flex gap-3">
-              <button id="dlg-add-inv"
-                class="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-green-700 transition shadow-lg">
-                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-                My Inventory
-              </button>
-
-              <button id="dlg-add-buy"
-                class="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-blue-700 transition shadow-lg">
-                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                </svg>
-                Buy List
-              </button>
-            </div>
-
-            <button data-close="1" class="w-full mt-3 px-4 py-2 text-gray-600 hover:text-gray-700 font-medium">Cancel</button>
-          </div>
-        `;
-
-        dialog.addEventListener('click', (e) => {
-          if (e.target && e.target.getAttribute('data-close') === '1') dialog.remove();
-        });
-
-        document.body.appendChild(dialog);
-
-        dialog.querySelector('#dlg-add-inv').addEventListener('click', async () => {
-          await addToInventoryFromDialog(brand, name, hex);
-          dialog.remove();
-        });
-
-        dialog.querySelector('#dlg-add-buy').addEventListener('click', async () => {
-          await addToBuylistFromDialog(brand, name, hex);
-          dialog.remove();
-        });
-      };
-
-      async function addToInventoryFromDialog(brand, name, hex) {
-        if (inventoryData.length >= 999) {
-          showToast('Maximum inventory limit reached', 'error');
-          return;
-        }
-
-        const existing = inventoryData.find(p => p.brand === brand && p.paint_name === name);
-        if (existing) {
-          if (!existing.owned) {
-            const res = await store.update({ ...existing, owned: true, quantity: Math.max(1, existing.quantity || 1) });
-            if (res.isOk) showToast(`${name} marked as owned!`, 'success');
-            else showToast('Failed to update paint', 'error');
-          } else {
-            showToast(`${name} is already in your inventory`, 'info');
-          }
-          return;
-        }
-
-        const result = await store.create({
-          type: 'paint',
-          brand,
-          paint_name: name,
-          hex_color: hex,
-          owned: true,
-          quantity: 1,
-          notes: '',
-          created_at: new Date().toISOString()
-        });
-
-        if (result.isOk) showToast(`${name} added to inventory!`, 'success');
-        else showToast('Failed to add paint', 'error');
-      }
-
-      async function addToBuylistFromDialog(brand, name, hex) {
-        if (buylistData.length >= 999) {
-          showToast('Maximum buy list limit reached', 'error');
-          return;
-        }
-
-        const existing = buylistData.find(p => p.brand === brand && p.paint_name === name);
-        if (existing) {
-          showToast(`${name} is already in your buy list`, 'info');
-          return;
-        }
-
-        const result = await store.create({
-          type: 'buylist',
-          brand,
-          paint_name: name,
-          hex_color: hex,
-          owned: false,
-          quantity: 1,
-          notes: '',
-          created_at: new Date().toISOString()
-        });
-
-        if (result.isOk) showToast(`${name} added to buy list!`, 'success');
-        else showToast('Failed to add paint', 'error');
-      }
-
-      /******************************************************************
-       * ADD ALL TO BUY LIST (conversion-friendly)
-       ******************************************************************/
-      async function addAllMatchesToBuylist() {
-        if (!colorMarkers.length) return;
-
-        const toAdd = [];
-
-        for (const marker of colorMarkers) {
-          const top = findClosestPaints(marker.color, 1)[0];
-
-          if (recipeOpenByMarkerId[marker.id]) {
-            const recipeBrand = conversionBrand || (top?.brand || 'citadel');
-            const recipe = recipeForTarget(marker.color, recipeBrand);
-            [recipe.base, recipe.shade, recipe.highlight].forEach(p => {
-              if (p) toAdd.push({ brand: p.brand, name: p.name, hex: p.hex });
-            });
-          } else if (top) {
-            toAdd.push({ brand: top.brand, name: top.name, hex: top.hex });
-          }
-        }
-
-        const uniq = new Map();
-        toAdd.forEach(p => uniq.set(paintKey(p.brand, p.name), p));
-
-        let added = 0;
-        for (const p of uniq.values()) {
-          const exists = buylistData.find(x => x.brand === p.brand && x.paint_name === p.name);
-          if (exists) continue;
-
-          const res = await store.create({
-            type: 'buylist',
-            brand: p.brand,
-            paint_name: p.name,
-            hex_color: p.hex,
-            owned: false,
-            quantity: 1,
-            notes: '',
-            created_at: new Date().toISOString()
-          });
-
-          if (res.isOk) added++;
-        }
-
-        showToast(added ? `Added ${added} paints to Buy List` : 'Nothing new to add', added ? 'success' : 'info');
-        switchView('buylist');
-      }
-
-      /******************************************************************
-       * COLOR MATCHING
-       ******************************************************************/
-      function findClosestPaints(targetHex, limit = 5) {
-        if (conversionBrand) {
-          return findClosestInBrand(targetHex, conversionBrand, limit);
-        }
-
-        const targetRgb = hexToRgb(targetHex);
-        const allPaints = [];
-
-        for (const [brand, paints] of Object.entries(PAINT_DATABASE)) {
-          for (const paint of paints) {
-            const paintRgb = hexToRgb(paint.hex);
-            const distance = colorDistance(targetRgb, paintRgb);
-            allPaints.push({
-              ...paint,
-              brand,
-              distance: Math.round((1 - distance / 441.67) * 100)
-            });
-          }
-        }
-
-        return allPaints
-          .sort((a, b) => b.distance - a.distance)
-          .slice(0, limit);
-      }
-
-      function colorDistance(rgb1, rgb2) {
-        return Math.sqrt(
-          Math.pow(rgb1.r - rgb2.r, 2) +
-          Math.pow(rgb1.g - rgb2.g, 2) +
-          Math.pow(rgb1.b - rgb2.b, 2)
-        );
-      }
-
-      function hexToRgb(hex) {
-        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16)
-        } : { r: 0, g: 0, b: 0 };
-      }
-
-      function rgbToHex(r, g, b) {
-        return '#' + [r, g, b].map(x => {
-          const h = x.toString(16);
-          return h.length === 1 ? '0' + h : h;
-        }).join('');
-      }
-
-      function formatBrandName(brand) {
-        const names = {
-          citadel: 'Citadel',
-          vallejo: 'Vallejo',
-          army_painter: 'Army Painter',
-          pro_acryl: 'Pro Acryl'
-        };
-        return names[brand] || brand;
-      }
-
-      /******************************************************************
-       * INVENTORY
-       ******************************************************************/
-      function updateBrandFilter() {
-        document.querySelectorAll('.brand-pill').forEach(btn => {
-          const isActive = (btn.dataset.brand === selectedBrand);
-          btn.classList.toggle('bg-indigo-600', isActive);
-          btn.classList.toggle('text-white', isActive);
-          btn.classList.toggle('bg-gray-100', !isActive);
-          btn.classList.toggle('text-gray-700', !isActive);
-        });
-      }
-
-      function handleBrandClick(e) {
-        selectedBrand = e.currentTarget.dataset.brand;
-        updateBrandFilter();
-        renderInventory();
-      }
-
-      async function addPaintToInventory() {
-        if (inventoryData.length >= 999) {
-          showToast('Maximum inventory limit reached (999 items)', 'error');
-          return;
-        }
-
-        const brand = document.getElementById('new-paint-brand').value;
-        const name = document.getElementById('new-paint-name').value.trim();
-        const hex = document.getElementById('new-paint-color').value;
-        const qty = parseInt(document.getElementById('new-paint-qty').value) || 1;
-
-        if (!name) {
-          showToast('Please enter a paint name', 'error');
-          return;
-        }
-
-        const existing = inventoryData.find(p => p.brand === brand && p.paint_name === name);
-        if (existing) {
-          const res = await store.update({
-            ...existing,
-            owned: true,
-            hex_color: hex || existing.hex_color,
-            quantity: (existing.quantity || 1) + qty
-          });
-          if (res.isOk) {
-            document.getElementById('new-paint-name').value = '';
-            showToast(`${name} updated in inventory!`, 'success');
-          } else showToast('Failed to update paint', 'error');
-          return;
-        }
-
-        const btn = document.getElementById('add-paint-btn');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="animate-spin">⏳</span> Adding...';
-
-        const result = await store.create({
-          type: 'paint',
-          brand,
-          paint_name: name,
-          hex_color: hex,
-          owned: true,
-          quantity: qty,
-          notes: '',
-          created_at: new Date().toISOString()
-        });
-
-        btn.disabled = false;
-        btn.innerHTML = `
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-          </svg>
-          Add to Inventory
-        `;
-
-        if (result.isOk) {
-          document.getElementById('new-paint-name').value = '';
-          showToast(`${name} added to inventory!`, 'success');
-        } else {
-          showToast('Failed to add paint', 'error');
-        }
-      }
-
-      window.updatePaintQuantity = async function(paint, delta) {
-        if (!paint) return;
-        const newQty = (paint.quantity || 1) + delta;
-        if (newQty < 0) return;
-
-        if (newQty === 0) {
-          await window.deletePaint(paint);
-          return;
-        }
-
-        const result = await store.update({ ...paint, quantity: newQty, owned: true });
-        if (!result.isOk) showToast('Failed to update quantity', 'error');
-      };
-
-      window.deletePaint = async function(paint) {
-        const result = await store.delete(paint);
-        if (result.isOk) showToast(`${paint.paint_name} removed`, 'success');
-        else showToast('Failed to remove paint', 'error');
-      };
-
-      window.toggleOwned = async function(paint) {
-        const result = await store.update({ ...paint, owned: !paint.owned });
-        if (!result.isOk) showToast('Failed to update paint', 'error');
-      };
-
-      function renderInventory() {
-        const container = document.getElementById('inventory-grid');
-        const emptyState = document.getElementById('empty-inventory');
-
-        let filtered = inventoryData.filter(p => p.type === 'paint');
-
-        if (selectedBrand !== 'all') filtered = filtered.filter(p => p.brand === selectedBrand);
-        if (showOwnedOnly) filtered = filtered.filter(p => p.owned);
-        if (searchQuery) {
-          filtered = filtered.filter(p =>
-            (p.paint_name || '').toLowerCase().includes(searchQuery) ||
-            (p.brand || '').toLowerCase().includes(searchQuery)
-          );
-        }
-
-        const ownedCount = inventoryData.filter(p => p.type === 'paint' && p.owned).length;
-        document.getElementById('paint-count').textContent = `(${inventoryData.filter(p => p.type === 'paint').length} paints)`;
-        document.getElementById('inventory-stats').textContent = `${ownedCount} owned`;
-
-        const grid = container.querySelector('.grid');
-
-        if (filtered.length === 0) {
-          emptyState.classList.remove('hidden');
-          grid.innerHTML = '';
-          refreshTestInventoryPicker();
-          return;
-        }
-
-        emptyState.classList.add('hidden');
-
-        grid.innerHTML = filtered.map(paint => `
-          <div class="paint-swatch bg-white rounded-xl p-3 shadow-sm hover:shadow-lg cursor-pointer relative group">
-            <div class="w-full aspect-square rounded-lg mb-2 shadow-inner relative" style="background-color:${paint.hex_color}">
-              ${paint.owned ? '<span class="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs">✓</span>' : ''}
-              <button title="Toggle owned" onclick="toggleOwned(inventoryData.find(p => p.__backendId === '${paint.__backendId}'))"
-                class="absolute bottom-1 right-1 text-[10px] px-2 py-1 rounded-full bg-white/90 text-gray-700 shadow hover:bg-white">
-                ${paint.owned ? 'Owned' : 'Not owned'}
-              </button>
-            </div>
-
-            <h4 class="font-medium text-sm text-gray-800 truncate">${paint.paint_name}</h4>
-            <p class="text-xs text-gray-500">${formatBrandName(paint.brand)}</p>
-            <p class="text-xs text-gray-400 font-mono uppercase mt-1">${paint.hex_color}</p>
-
-            <div class="flex items-center justify-between mt-2">
-              <div class="flex items-center gap-1">
-                <button onclick="updatePaintQuantity(inventoryData.find(p => p.__backendId === '${paint.__backendId}'), -1)"
-                  class="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm">-</button>
-                <span class="text-sm font-medium w-6 text-center">${paint.quantity || 1}</span>
-                <button onclick="updatePaintQuantity(inventoryData.find(p => p.__backendId === '${paint.__backendId}'), 1)"
-                  class="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm">+</button>
-              </div>
-
-              <button onclick="deletePaint(inventoryData.find(p => p.__backendId === '${paint.__backendId}'))"
-                class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
-              </button>
+            <div class="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <button class="px-3 py-2 rounded-lg border ${!conv ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}"
+                      data-action="set-conversion" data-payload="${encodeURIComponent(JSON.stringify({brand:null}))}">Off</button>
+              ${
+                Object.keys(BRAND_NAMES).map(b => `
+                  <button class="px-3 py-2 rounded-lg border ${conv===b ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}"
+                          data-action="set-conversion" data-payload="${encodeURIComponent(JSON.stringify({brand:b}))}">${escapeHtml(formatBrand(b))}</button>
+                `).join('')
+              }
             </div>
           </div>
-        `).join('');
-
-        refreshTestInventoryPicker();
-      }
-
-      /******************************************************************
-       * BUY LIST
-       ******************************************************************/
-      async function addPaintToBuylist() {
-        if (buylistData.length >= 999) {
-          showToast('Maximum buy list limit reached (999 items)', 'error');
-          return;
-        }
-
-        const brand = document.getElementById('buylist-paint-brand').value;
-        const name = document.getElementById('buylist-paint-name').value.trim();
-        const hex = document.getElementById('buylist-paint-color').value;
-
-        if (!name) {
-          showToast('Please enter a paint name', 'error');
-          return;
-        }
-
-        const existing = buylistData.find(p => p.brand === brand && p.paint_name === name);
-        if (existing) {
-          showToast(`${name} is already in your buy list`, 'info');
-          return;
-        }
-
-        const btn = document.getElementById('add-buylist-btn');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="animate-spin">⏳</span> Adding...';
-
-        const result = await store.create({
-          type: 'buylist',
-          brand,
-          paint_name: name,
-          hex_color: hex,
-          owned: false,
-          quantity: 1,
-          notes: '',
-          created_at: new Date().toISOString()
-        });
-
-        btn.disabled = false;
-        btn.innerHTML = `
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-          </svg>
-          Add to Buy List
-        `;
-
-        if (result.isOk) {
-          document.getElementById('buylist-paint-name').value = '';
-          showToast(`${name} added to buy list!`, 'success');
-        } else {
-          showToast('Failed to add paint', 'error');
-        }
-      }
-
-      window.moveToPainted = async function(item) {
-        const del = await store.delete(item);
-        if (!del.isOk) return showToast('Failed to move paint', 'error');
-
-        const existing = inventoryData.find(p => p.brand === item.brand && p.paint_name === item.paint_name);
-        if (existing) {
-          const up = await store.update({ ...existing, owned: true, quantity: (existing.quantity || 1) + 1 });
-          if (up.isOk) showToast(`${item.paint_name} moved to inventory!`, 'success');
-          else showToast('Failed to update inventory', 'error');
-          return;
-        }
-
-        const createResult = await store.create({
-          type: 'paint',
-          brand: item.brand,
-          paint_name: item.paint_name,
-          hex_color: item.hex_color,
-          owned: true,
-          quantity: 1,
-          notes: '',
-          created_at: new Date().toISOString()
-        });
-
-        if (createResult.isOk) showToast(`${item.paint_name} moved to inventory!`, 'success');
-        else showToast('Failed to add to inventory', 'error');
-      };
-
-      window.deleteBuylistItem = async function(item) {
-        const result = await store.delete(item);
-        if (result.isOk) showToast(`${item.paint_name} removed from buy list`, 'success');
-        else showToast('Failed to remove paint', 'error');
-      };
-
-      function renderBuylist() {
-        const container = document.getElementById('buylist-grid');
-        const emptyState = document.getElementById('empty-buylist');
-        const grid = container.querySelector('.grid');
-
-        document.getElementById('buylist-count').textContent = `(${buylistData.length} items)`;
-
-        if (buylistData.length === 0) {
-          emptyState.classList.remove('hidden');
-          grid.innerHTML = '';
-          return;
-        }
-
-        emptyState.classList.add('hidden');
-
-        grid.innerHTML = buylistData.map(item => `
-          <div class="paint-swatch bg-white rounded-xl p-3 shadow-sm hover:shadow-lg cursor-pointer relative group">
-            <div class="w-full aspect-square rounded-lg mb-2 shadow-inner relative" style="background-color:${item.hex_color}"></div>
-            <h4 class="font-medium text-sm text-gray-800 truncate">${item.paint_name}</h4>
-            <p class="text-xs text-gray-500">${formatBrandName(item.brand)}</p>
-            <p class="text-xs text-gray-400 font-mono uppercase mt-1">${item.hex_color}</p>
-
-            <div class="flex gap-1 mt-2">
-              <button onclick="moveToPainted(buylistData.find(p => p.__backendId === '${item.__backendId}'))"
-                class="flex-1 text-xs px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition opacity-0 group-hover:opacity-100">Got it</button>
-              <button onclick="deleteBuylistItem(buylistData.find(p => p.__backendId === '${item.__backendId}'))"
-                class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
-              </button>
+          <div class="p-3 rounded-xl bg-gray-50 border border-gray-200">
+            <div class="font-semibold text-gray-900">Recipe Generator</div>
+            <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label class="flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" id="set-owned-swap" ${state.settings.recipe.enableOwnedSwap ? 'checked' : ''} />
+                Swap to paints I already own
+              </label>
+              <label class="flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" id="set-crossbrand-swap" ${state.settings.recipe.allowCrossBrandOwnedSwap ? 'checked' : ''} />
+                Allow cross-brand owned swap
+              </label>
+              <label class="flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" id="set-strict-types" ${state.settings.recipe.strictTypes ? 'checked' : ''} />
+                Type-aware roles (recommended)
+              </label>
+              <label class="text-sm text-gray-700">
+                Highlight/Shade intensity
+                <input type="range" id="set-deltaL" min="6" max="35" value="${clamp(state.settings.recipe.recipeDeltaL,6,35)}" class="w-full" />
+                <div class="text-xs text-gray-500">Current: <span class="font-mono">${clamp(state.settings.recipe.recipeDeltaL,6,35)}</span></div>
+              </label>
             </div>
           </div>
-        `).join('');
-      }
-
-      /******************************************************************
-       * TEST PAINT (overlay painting) - upgraded with blend + hardness
-       ******************************************************************/
-      function refreshTestInventoryPicker() {
-        const sel = document.getElementById('test-inv-pick');
-        if (!sel) return;
-        const current = sel.value;
-
-        const options = inventoryData
-          .filter(p => p.type === 'paint')
-          .slice()
-          .sort((a, b) => (a.paint_name || '').localeCompare(b.paint_name || ''))
-          .map(p => `<option value="${p.__backendId}">${p.paint_name} — ${formatBrandName(p.brand)}</option>`)
-          .join('');
-
-        sel.innerHTML = `<option value="">— Select a paint —</option>${options}`;
-        if (current && inventoryData.find(p => p.__backendId === current)) sel.value = current;
-      }
-
-      function handleTestImageUpload(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          testImage = new Image();
-          testImage.onload = () => {
-            document.getElementById('test-empty').classList.add('hidden');
-            testUndoStack = [];
-            requestAnimationFrame(() => {
-              drawTestImage();
-              testClearPaint();
-            });
-          };
-          testImage.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
-
-      function drawTestImage() {
-        const base = document.getElementById('test-base-canvas');
-        const paint = document.getElementById('test-paint-canvas');
-        const stage = document.getElementById('test-stage');
-
-        const w = stage.clientWidth || 1;
-        const h = stage.clientHeight || 1;
-
-        base.width = w; base.height = h;
-        paint.width = w; paint.height = h;
-
-        const bctx = base.getContext('2d');
-        bctx.clearRect(0,0,w,h);
-        bctx.fillStyle = '#1f2937';
-        bctx.fillRect(0,0,w,h);
-
-        const scale = Math.min(w / testImage.width, h / testImage.height);
-        const x = (w - testImage.width * scale) / 2;
-        const y = (h - testImage.height * scale) / 2;
-        bctx.drawImage(testImage, x, y, testImage.width * scale, testImage.height * scale);
-      }
-
-      function testOnMove(e) {
-        const stage = document.getElementById('test-stage');
-        const rect = stage.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        const cursor = document.getElementById('test-cursor');
-        cursor.style.display = 'block';
-        cursor.style.left = x + 'px';
-        cursor.style.top = y + 'px';
-        updatePaintCursor();
-
-        if (isPainting) testPaintTo(x, y);
-      }
-
-      function updatePaintCursor() {
-        const cursor = document.getElementById('test-cursor');
-        const size = parseInt(document.getElementById('brush-size').value, 10);
-        const color = document.getElementById('test-paint-color').value;
-        cursor.style.width = size + 'px';
-        cursor.style.height = size + 'px';
-        cursor.style.background = color;
-        cursor.style.opacity = '0.18';
-      }
-
-      function testStartPaint(e) {
-        if (!testImage) {
-          showToast('Upload an image first', 'error');
-          return;
-        }
-        isPainting = true;
-
-        const paint = document.getElementById('test-paint-canvas');
-        const pctx = paint.getContext('2d');
-        try {
-          const snap = pctx.getImageData(0,0,paint.width,paint.height);
-          testUndoStack.push(snap);
-          if (testUndoStack.length > 30) testUndoStack.shift();
-        } catch (err) {}
-
-        const stage = document.getElementById('test-stage');
-        const rect = stage.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        lastPt = { x, y };
-        testPaintTo(x, y, true);
-      }
-
-      function testStopPaint() {
-        isPainting = false;
-        lastPt = null;
-      }
-
-      function stampSoftBrush(ctx, x, y, radius, color, opacity, hardnessPct) {
-        const h = clamp(hardnessPct, 0, 100) / 100;
-        const inner = radius * h;
-
-        ctx.fillStyle = color;
-
-        ctx.globalAlpha = opacity;
-
-        if (h >= 0.95) {
-          ctx.beginPath();
-          ctx.arc(x, y, radius, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          const steps = 6;
-          for (let i = 0; i < steps; i++) {
-            const t = (i + 1) / steps;
-            ctx.globalAlpha = opacity * (1 - t) * 0.9;
-            ctx.beginPath();
-            ctx.arc(x, y, inner + (radius - inner) * t, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-
-        ctx.globalAlpha = 1;
-      }
-
-      function testPaintTo(x, y, forceDot = false) {
-        const paint = document.getElementById('test-paint-canvas');
-        const ctx = paint.getContext('2d');
-
-        const size = parseInt(document.getElementById('brush-size').value, 10);
-        const opacity = parseInt(document.getElementById('brush-opacity').value, 10) / 100;
-        const color = document.getElementById('test-paint-color').value;
-
-        ctx.globalCompositeOperation = testBlendMode || 'source-over';
-
-        const radius = Math.max(1, size / 2);
-
-        if (!lastPt || forceDot) {
-          stampSoftBrush(ctx, x, y, radius, color, opacity, brushHardness);
-          lastPt = { x, y };
-          ctx.globalCompositeOperation = 'source-over';
-          return;
-        }
-
-        const dx = x - lastPt.x;
-        const dy = y - lastPt.y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        const step = Math.max(1, radius * 0.35);
-        const steps = Math.ceil(dist / step);
-
-        for (let i = 1; i <= steps; i++) {
-          const t = i / steps;
-          const px = lastPt.x + dx * t;
-          const py = lastPt.y + dy * t;
-          stampSoftBrush(ctx, px, py, radius, color, opacity, brushHardness);
-        }
-
-        lastPt = { x, y };
-        ctx.globalCompositeOperation = 'source-over';
-      }
-
-      function testUndo() {
-        const paint = document.getElementById('test-paint-canvas');
-        const ctx = paint.getContext('2d');
-        const snap = testUndoStack.pop();
-        if (!snap) return showToast('Nothing to undo', 'info');
-        ctx.putImageData(snap, 0, 0);
-      }
-
-      function testClearPaint() {
-        const paint = document.getElementById('test-paint-canvas');
-        const ctx = paint.getContext('2d');
-        ctx.clearRect(0,0,paint.width,paint.height);
-      }
-
-      /******************************************************************
-       * PDF EXPORT (your original, kept)
-       ******************************************************************/
-      function exportMatchesToPDF() {
-        if (!window.html2pdf) {
-          showToast('PDF library not loaded. Please refresh and try again.', 'error');
-          return;
-        }
-        if (!uploadedImage) {
-          showToast('Please upload an image first', 'error');
-          return;
-        }
-
-        const btn = document.getElementById('export-matches-btn');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="animate-spin">⏳</span> Generating...';
-
-        const canvas = document.getElementById('image-canvas');
-        const matchesData = colorMarkers.map((marker, idx) => {
-          const matches = findClosestPaints(marker.color);
-          return { marker: idx + 1, color: marker.color, x: marker.x, y: marker.y, topMatch: matches[0] || null };
+          <div class="p-3 rounded-xl bg-gray-50 border border-gray-200">
+            <div class="font-semibold text-gray-900">Buy List Hygiene</div>
+            <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label class="flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" id="set-avoid-owned" ${state.settings.cart.avoidOwnedPurchases ? 'checked' : ''} />
+                Avoid purchasing owned paints
+              </label>
+              <label class="flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" id="set-qty-usage" ${state.settings.cart.qtyPerUsage ? 'checked' : ''} />
+                Increase qty when used repeatedly
+              </label>
+            </div>
+          </div>
+          <div class="p-3 rounded-xl bg-gray-50 border border-gray-200">
+            <div class="font-semibold text-gray-900">Export</div>
+            <div class="text-xs text-gray-500 mt-1">White background, black text, includes recipes + cart.</div>
+            <button class="mt-2 w-full px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 shadow" data-action="export-plan">Export Printable PDF</button>
+          </div>
+        </div>
+      `;
+      openModal('Advanced', body, [{label:'Done', className:'px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700', action:'advanced-save'}]);
+    }
+    function saveAdvanced() {
+      const a=$('#set-owned-swap'), b=$('#set-crossbrand-swap'), c=$('#set-strict-types'), d=$('#set-deltaL'), e=$('#set-avoid-owned'), f=$('#set-qty-usage');
+      if (a) state.settings.recipe.enableOwnedSwap = !!a.checked;
+      if (b) state.settings.recipe.allowCrossBrandOwnedSwap = !!b.checked;
+      if (c) state.settings.recipe.strictTypes = !!c.checked;
+      if (d) state.settings.recipe.recipeDeltaL = clamp(parseInt(d.value,10)||18, 6, 35);
+      if (e) state.settings.cart.avoidOwnedPurchases = !!e.checked;
+      if (f) state.settings.cart.qtyPerUsage = !!f.checked;
+      saveState(); closeModal(); updateColorMatches(); renderBuylist();
+      showToast('Settings saved', 'success');
+    }
+    // Matcher image
+    let uploadedImage=null;
+    function loadMatcherImageFromFile(file) {
+      const r=new FileReader();
+      r.onload = (e) => {
+        state.matcher.uploadedImageDataUrl = String(e.target.result||'');
+        saveState();
+        loadMatcherImageFromDataUrl(state.matcher.uploadedImageDataUrl, () => {
+          state.matcher.markers=[];
+          state.matcher.markerCounter=0;
+          state.ui.recipeExpandedByMarkerId={};
+          saveState();
+          $('#markers-container').innerHTML='';
+          renderMarkers(); updateColorMatches();
         });
-
-        const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-
-        const htmlContent = `
-          <div style="width: 210mm; padding: 20mm; font-family: Arial, sans-serif; background-color: #ffffff;">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="font-size: 28px; font-weight: bold; color: #1e1b4b; margin: 0 0 10px 0;">Paint Matcher Report</h1>
-              <p style="color: #666; font-size: 14px; margin: 0;">${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+      };
+      r.readAsDataURL(file);
+      $('#image-upload').value='';
+    }
+    function loadMatcherImageFromDataUrl(url, cb) {
+      uploadedImage=new Image();
+      uploadedImage.onload = () => {
+        $('#upload-zone').classList.add('hidden');
+        $('#image-container').classList.remove('hidden');
+        requestAnimationFrame(() => { drawImage(); if (cb) cb(); });
+      };
+      uploadedImage.src=url;
+    }
+    function drawImage() {
+      if (!uploadedImage) return;
+      const canvas=$('#image-canvas');
+      const ctx=canvas.getContext('2d');
+      const container=canvas.parentElement;
+      const w=container.clientWidth||1, h=container.clientHeight||1;
+      canvas.width=w; canvas.height=h;
+      const scale=Math.min(w/uploadedImage.width, h/uploadedImage.height);
+      const x=(w-uploadedImage.width*scale)/2;
+      const y=(h-uploadedImage.height*scale)/2;
+      ctx.fillStyle='#f3f4f6';
+      ctx.fillRect(0,0,w,h);
+      ctx.drawImage(uploadedImage, x, y, uploadedImage.width*scale, uploadedImage.height*scale);
+    }
+    function clearImage() {
+      uploadedImage=null;
+      state.matcher.uploadedImageDataUrl=null;
+      state.matcher.markers=[];
+      state.matcher.markerCounter=0;
+      state.ui.recipeExpandedByMarkerId={};
+      saveState();
+      $('#upload-zone').classList.remove('hidden');
+      $('#image-container').classList.add('hidden');
+      $('#markers-container').innerHTML='';
+      updateColorMatches();
+    }
+    function addMarker() {
+      if (!uploadedImage) return showToast('Upload an image first', 'error');
+      const id=++state.matcher.markerCounter;
+      state.matcher.markers.push({id, xPct:50, yPct:50, colorHex:'#888888'});
+      saveState(); renderMarkers();
+      setTimeout(() => sampleMarkerColor(id), 60);
+    }
+    function renderMarkers() {
+      const c=$('#markers-container'); c.innerHTML='';
+      state.matcher.markers.forEach((m,i) => {
+        const el=document.createElement('div');
+        el.className='color-marker absolute w-8 h-8 rounded-full border-4 border-white shadow-lg';
+        el.dataset.markerId=String(m.id);
+        el.style.left=`${m.xPct}%`;
+        el.style.top=`${m.yPct}%`;
+        el.style.transform='translate(-50%,-50%)';
+        el.style.backgroundColor=m.colorHex||'#888888';
+        const label=document.createElement('span');
+        label.className='absolute -top-6 left-1/2 -translate-x-1/2 bg-white text-gray-800 text-xs font-bold px-2 py-0.5 rounded-full shadow';
+        label.textContent=String(i+1);
+        el.appendChild(label);
+        const del=document.createElement('button');
+        del.className='absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 flex items-center justify-center';
+        del.textContent='×';
+        del.dataset.action='marker-delete';
+        del.dataset.markerId=String(m.id);
+        el.appendChild(del);
+        c.appendChild(el);
+      });
+    }
+    function sampleMarkerColor(id) {
+      if (!uploadedImage) return;
+      const canvas=$('#image-canvas');
+      const ctx=canvas.getContext('2d');
+      const el=document.querySelector(`.color-marker[data-marker-id="${id}"]`);
+      if (!el) return;
+      const x=el.offsetLeft+16, y=el.offsetTop+16;
+      try {
+        const px=ctx.getImageData(x,y,1,1).data;
+        const hex=rgbToHex(px[0],px[1],px[2]);
+        el.style.backgroundColor=hex;
+        const m=state.matcher.markers.find(mm=>mm.id===id);
+        if (m) m.colorHex=hex;
+        saveState();
+        updateColorMatches();
+      } catch {}
+    }
+    function deleteMarker(id) {
+      state.matcher.markers = state.matcher.markers.filter(m=>m.id!==id);
+      delete state.ui.recipeExpandedByMarkerId[String(id)];
+      saveState();
+      renderMarkers();
+      updateColorMatches();
+    }
+    // Drag marker via delegation
+    let drag={active:false, markerId:null, startX:0,startY:0,startLeft:0,startTop:0};
+    function startDragMarker(el, e) {
+      const id=parseInt(el.dataset.markerId,10);
+      if(!id) return;
+      drag.active=true; drag.markerId=id; drag.startX=e.clientX; drag.startY=e.clientY;
+      drag.startLeft=el.offsetLeft; drag.startTop=el.offsetTop;
+      el.style.cursor='grabbing'; el.style.zIndex='100';
+    }
+    function moveDrag(e) {
+      if(!drag.active) return;
+      const id=drag.markerId;
+      const el=document.querySelector(`.color-marker[data-marker-id="${id}"]`);
+      if(!el) return;
+      const cont=$('#markers-container');
+      const rect=cont.getBoundingClientRect();
+      let newLeft=drag.startLeft + (e.clientX-drag.startX);
+      let newTop=drag.startTop + (e.clientY-drag.startY);
+      newLeft=clamp(newLeft,0,rect.width-32);
+      newTop=clamp(newTop,0,rect.height-32);
+      el.style.left=newLeft+'px'; el.style.top=newTop+'px'; el.style.transform='none';
+      const x=newLeft+16, y=newTop+16;
+      const m=state.matcher.markers.find(mm=>mm.id===id);
+      if(m) { m.xPct=(x/rect.width)*100; m.yPct=(y/rect.height)*100; }
+      sampleMarkerColor(id);
+    }
+    function stopDrag() {
+      if(!drag.active) return;
+      const el=document.querySelector(`.color-marker[data-marker-id="${drag.markerId}"]`);
+      if (el) { el.style.cursor='grab'; el.style.zIndex=''; }
+      drag.active=false; drag.markerId=null;
+      saveState();
+      updateColorMatches();
+    }
+    // Plan rendering
+    function badgeForDistance(dist) {
+      if (dist>=95) return {label:'Exact', cls:'bg-green-100 text-green-700'};
+      if (dist>=88) return {label:'Close', cls:'bg-indigo-100 text-indigo-700'};
+      return {label:'Alt', cls:'bg-gray-100 text-gray-600'};
+    }
+    function renderPickRow(p, opts={}) {
+      const owned = !!opts.owned;
+      const badge = opts.badge || badgeForDistance(p.distance||0);
+      const typePill = p.type ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-semibold">${escapeHtml(p.type)}</span>` : '';
+      const ownedPill = owned ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">Owned</span>` : '';
+      const payload = encodeURIComponent(JSON.stringify(opts.payload || p));
+      const extraRight = opts.extraRight || '';
+      return `
+        <div class="flex items-center gap-2 p-2 bg-white rounded-lg hover:shadow-md transition cursor-pointer"
+             data-action="open-add" data-payload="${payload}">
+          <div class="w-6 h-6 rounded-md shadow-sm flex-shrink-0" style="background-color:${p.hex}"></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <p class="text-sm font-medium text-gray-800 truncate">${escapeHtml(p.paint_name)}</p>
+              <span class="text-[10px] px-2 py-0.5 rounded-full ${badge.cls} font-semibold">${badge.label}</span>
+              ${typePill} ${ownedPill}
             </div>
-
-            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-              <h2 style="font-size: 18px; font-weight: 600; color: #1e1b4b; margin: 0 0 15px 0;">Summary</h2>
-              <p style="margin: 8px 0; color: #374151; font-size: 14px;"><strong>Total Colors:</strong> ${colorMarkers.length}</p>
-              <p style="margin: 8px 0; color: #374151; font-size: 14px;"><strong>Date:</strong> ${new Date().toLocaleTimeString()}</p>
+            <p class="text-xs text-gray-500">${formatBrand(p.brand)} • <span class="font-mono">${String(p.hex||'').toUpperCase()}</span></p>
+          </div>
+          <div class="text-right flex items-center gap-2">
+            ${extraRight}
+            <span class="text-xs text-indigo-600 font-semibold">${p.distance ?? 0}%</span>
+          </div>
+        </div>
+      `;
+    }
+    function fallbackRecipeBrand(hex) {
+      const top = findClosest(hex, null, 1)[0];
+      return top ? top.brand : 'citadel';
+    }
+    function renderRecipeBlock(marker) {
+      const open = !!state.ui.recipeExpandedByMarkerId[String(marker.id)];
+      const recipeBrand = state.settings.conversionBrand || fallbackRecipeBrand(marker.colorHex);
+      const rec = recipeFor(marker.colorHex, recipeBrand);
+      const idx = state.matcher.markers.findIndex(m => m.id===marker.id) + 1;
+      const pickCard = (roleLabel, obj) => {
+        if (!obj?.pick) return `<div class="p-2 bg-white rounded-lg border border-gray-100 text-sm"><strong>${roleLabel}</strong>: <span class="text-gray-500">No suggestion</span></div>`;
+        const p=obj.pick;
+        const owned=isOwned(p.brand,p.paint_name);
+        const extraRight = `<button class="text-[11px] px-2 py-1 rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+                              data-action="buy-add"
+                              data-payload="${encodeURIComponent(JSON.stringify({brand:p.brand, paint_name:p.paint_name, hex:p.hex, type:p.type, sku:p.sku||null, role:roleLabel, reason:`Recipe for Point ${idx}`}))}">Add</button>`;
+        return renderPickRow(p, {badge:{label:roleLabel, cls:'bg-purple-100 text-purple-700'}, owned, payload:{brand:p.brand, paint_name:p.paint_name, hex:p.hex, type:p.type, sku:p.sku||null}, extraRight});
+      };
+      const ownedAltLine = (obj) => {
+        if(!obj?.altOwned) return '';
+        const o=obj.altOwned;
+        return `<div class="mt-2 text-xs text-gray-600 bg-amber-50 border border-amber-100 rounded-lg p-2">
+          Owned alternative: <span class="font-semibold">${escapeHtml(o.paint_name)}</span> (${formatBrand(o.brand)}) • ${o.distance}%
+        </div>`;
+      };
+      return `
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Recipe (${formatBrand(recipeBrand)}) • Base / Shade / Highlight</div>
+            <button class="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                    data-action="recipe-toggle" data-payload="${encodeURIComponent(JSON.stringify({markerId:marker.id}))}">${open?'Hide':'Show'}</button>
+          </div>
+          ${open ? `
+            <div class="space-y-2">
+              ${pickCard('Base', rec.base)} ${ownedAltLine(rec.base)}
+              ${pickCard('Shade', rec.shade)} ${ownedAltLine(rec.shade)}
+              ${pickCard('Highlight', rec.highlight)} ${ownedAltLine(rec.highlight)}
             </div>
-
-            <div style="margin-bottom: 30px; text-align: center;">
-              <h2 style="font-size: 18px; font-weight: 600; color: #1e1b4b; margin: 0 0 15px 0;">Reference Image with Color Points</h2>
-              <div style="position: relative; display: inline-block; max-width: 100%;">
-                <img src="${imageDataUrl}" style="max-width: 100%; height: auto; border: 2px solid #e5e7eb; border-radius: 8px;">
-                <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
-                  ${matchesData.map(data => `
-                    <circle cx="${data.x}%" cy="${data.y}%" r="3%" fill="none" stroke="#ef4444" stroke-width="0.3%" opacity="0.8"/>
-                    <circle cx="${data.x}%" cy="${data.y}%" r="2.2%" fill="none" stroke="#fca5a5" stroke-width="0.2%"/>
-                    <text x="${data.x}%" y="${data.y}%" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="1.5%" font-weight="bold" stroke="#000" stroke-width="0.3%">${data.marker}</text>
-                  `).join('')}
-                </svg>
-              </div>
-            </div>
-
-            ${matchesData.map((data) => `
-              <div style="margin-bottom: 20px; page-break-inside: avoid;">
-                <div style="display:flex; align-items:center; margin-bottom:12px; border-bottom:2px solid #e5e7eb; padding-bottom:10px;">
-                  <div style="width:35px; height:35px; background-color:${data.color}; border-radius:6px; border:2px solid #d1d5db; margin-right:12px; font-weight:bold; color:white; display:flex; align-items:center; justify-content:center; font-size:16px;">${data.marker}</div>
-                  <div>
-                    <h3 style="font-size:14px; font-weight:600; color:#1e1b4b; margin:0;">Color Point ${data.marker}</h3>
-                    <p style="font-size:12px; color:#666; margin:4px 0 0 0; font-family: monospace;">${String(data.color).toUpperCase()}</p>
-                  </div>
+            <button class="w-full mt-2 px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 shadow"
+                    data-action="recipe-add-all" data-payload="${encodeURIComponent(JSON.stringify({markerId:marker.id}))}">Add all recipe paints to Buy List</button>
+          ` : ''}
+        </div>
+      `;
+    }
+    function updateColorMatches() {
+      const container=$('#color-matches');
+      const exportBtn=$('#export-matches-btn');
+      const addAllBtn=$('#add-all-buylist-btn');
+      const markers=state.matcher.markers||[];
+      if (!markers.length) {
+        exportBtn.classList.add('hidden');
+        addAllBtn.classList.add('hidden');
+        container.innerHTML = `
+          <div class="text-center py-12 text-gray-400">
+            <p class="font-medium">No colors selected</p>
+            <p class="text-sm mt-1">Upload an image and add color points</p>
+          </div>
+        `;
+        return;
+      }
+      exportBtn.classList.remove('hidden');
+      addAllBtn.classList.remove('hidden');
+      const idxOwned=ownedIndex();
+      container.innerHTML = markers.map((marker, i) => {
+        const brandLock=state.settings.conversionBrand || null;
+        const matches=findClosest(marker.colorHex, brandLock, 5, null);
+        const matchRows = matches.map(m => renderPickRow(m, {owned: idxOwned.has(paintKey(m.brand,m.paint_name)), payload:{brand:m.brand, paint_name:m.paint_name, hex:m.hex, type:m.type, sku:m.sku||null} })).join('');
+        return `
+          <div class="bg-gray-50 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg shadow-inner border-2 border-white" style="background:${marker.colorHex}"></div>
+                <div>
+                  <p class="font-semibold text-gray-800">Point ${i+1}</p>
+                  <p class="text-xs text-gray-500 font-mono uppercase">${marker.colorHex.toUpperCase()}</p>
                 </div>
-                ${data.topMatch ? `
-                  <div style="display:flex; align-items:center; margin-left:55px; padding:12px; background:#f9fafb; border-radius:6px; border-left:4px solid #6366f1;">
-                    <div style="width:32px; height:32px; background-color:${data.topMatch.hex}; border-radius:4px; margin-right:12px; border:1px solid #d1d5db; flex-shrink:0;"></div>
-                    <div style="flex:1;">
-                      <div style="font-weight:600; color:#1f2937; font-size:13px;">${data.topMatch.name}</div>
-                      <div style="color:#6b7280; font-size:11px; margin-top:2px;">${formatBrandName(data.topMatch.brand)} - ${data.topMatch.hex}</div>
-                    </div>
-                    <div style="background:#6366f1; color:white; padding:6px 10px; border-radius:4px; font-weight:600; font-size:13px; text-align:center; flex-shrink:0;">${data.topMatch.distance}%</div>
-                  </div>
-                ` : `
-                  <div style="margin-left:55px; padding:12px; background:#fef2f2; border-radius:6px; border-left:4px solid #f87171; color:#7f1d1d; font-size:13px;">
-                    No matching paints found
-                  </div>
-                `}
               </div>
-            `).join('')}
-
-            <div style="margin-top:40px; padding-top:20px; border-top:2px solid #e5e7eb; text-align:center; font-size:10px; color:#9ca3af;">
-              <p style="margin:0;">Generated by Paint Matcher</p>
+              <button class="text-xs font-medium text-red-500 hover:text-red-600" data-action="marker-delete" data-marker-id="${marker.id}">Remove</button>
             </div>
+            ${renderRecipeBlock(marker)}
+            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Top matches</div>
+            <div class="space-y-2">${matchRows}</div>
           </div>
         `;
-
-        const opt = {
-          margin: [0, 0, 0, 0],
-          filename: `paint-matches-${new Date().toISOString().split('T')[0]}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, allowTaint: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        window.html2pdf().set(opt).from(htmlContent).save()
-          .then(() => {
-            btn.disabled = false;
-            btn.innerHTML = `
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-              </svg>
-              Export PDF
-            `;
-            showToast('PDF exported successfully! 🎉', 'success');
-          })
-          .catch(() => {
-            btn.disabled = false;
-            btn.innerHTML = `
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-              </svg>
-              Export PDF
-            `;
-            showToast('Error generating PDF. Please try again.', 'error');
-          });
+      }).join('');
+    }
+    // Add modal
+    function openAddModal(p) {
+      const owned=isOwned(p.brand,p.paint_name);
+      const body = `
+        <div class="flex items-center gap-4 mb-4">
+          <div class="w-14 h-14 rounded-xl shadow-lg" style="background:${p.hex}"></div>
+          <div>
+            <div class="font-semibold text-gray-900">${escapeHtml(p.paint_name)}</div>
+            <div class="text-sm text-gray-500">${formatBrand(p.brand)} • <span class="font-mono">${String(p.hex).toUpperCase()}</span></div>
+            <div class="text-xs text-gray-500 mt-1">Type: <span class="font-semibold">${escapeHtml(p.type||PaintType.Other)}</span> ${owned? ' • <span class="text-amber-700 font-semibold">Owned</span>':''}</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Qty</label>
+            <input id="modal-qty" type="number" min="1" value="1" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+          </div>
+          <div class="sm:col-span-2">
+            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Reason (optional)</label>
+            <input id="modal-reason" type="text" placeholder="e.g., highlight for cloak" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+          </div>
+        </div>
+      `;
+      openModal('Add Paint', body, [
+        {label:'Add to Inventory', className:'px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700', action:'modal-add-inv', payload:p},
+        {label:'Add to Buy List', className:'px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700', action:'modal-add-buy', payload:p},
+        {label:'Cancel', action:'modal-close'}
+      ]);
+    }
+    const modalQty = () => clamp(parseInt($('#modal-qty')?.value||'1',10)||1, 1, 99);
+    const modalReason = () => String($('#modal-reason')?.value||'').trim();
+    function addToInventory(p, qty=1) {
+      const key=paintKey(p.brand,p.paint_name);
+      const existing=state.data.inventory.find(x=>paintKey(x.brand,x.paint_name)===key);
+      if(existing) {
+        existing.owned=true;
+        existing.hex=p.hex||existing.hex;
+        existing.type=p.type||existing.type;
+        existing.sku=p.sku||existing.sku||null;
+        existing.quantity=clamp((existing.quantity||1)+qty, 1, 999);
+        existing.updated_at=nowIso();
+      } else {
+        state.data.inventory.push({ id:uid(), kind:'paint', brand:p.brand, paint_name:p.paint_name, hex:p.hex, type:p.type||PaintType.Other, owned:true, quantity:qty, sku:p.sku||null, created_at:nowIso(), updated_at:nowIso() });
       }
-
-      /******************************************************************
-       * TOAST
-       ******************************************************************/
-      function showToast(message, type = 'info') {
-        const existing = document.querySelector('.toast-notification');
-        if (existing) existing.remove();
-
-        const toast = document.createElement('div');
-        toast.className =
-          'toast-notification fixed bottom-6 right-6 px-6 py-3 rounded-xl shadow-2xl text-white font-medium z-50 transform transition-all duration-300 translate-y-20 opacity-0';
-
-        const colors = { success: 'bg-green-500', error: 'bg-red-500', info: 'bg-indigo-500' };
-        toast.classList.add(colors[type] || colors.info);
-        toast.textContent = message;
-        document.body.appendChild(toast);
-
-        setTimeout(() => toast.classList.remove('translate-y-20', 'opacity-0'), 50);
-        setTimeout(() => {
-          toast.classList.add('translate-y-20', 'opacity-0');
-          setTimeout(() => toast.remove(), 300);
-        }, 3000);
+      saveState();
+    }
+    // Inventory render
+    function updateBrandFilterUI() {
+      $$('[data-action="inv-brand"]').forEach(btn => {
+        const isActive = (btn.dataset.brand === state.ui.invBrand);
+        btn.classList.toggle('bg-indigo-600', isActive);
+        btn.classList.toggle('text-white', isActive);
+        btn.classList.toggle('bg-gray-100', !isActive);
+        btn.classList.toggle('text-gray-700', !isActive);
+      });
+    }
+    function renderInventory() {
+      updateBrandFilterUI();
+      const grid=$('#inventory-grid .grid');
+      const empty=$('#empty-inventory');
+      let list = state.data.inventory.slice();
+      if(state.ui.invBrand!=='all') list=list.filter(p=>p.brand===state.ui.invBrand);
+      if(state.ui.invOwnedOnly) list=list.filter(p=>p.owned);
+      if(state.ui.invSearch) {
+        const q=state.ui.invSearch.toLowerCase();
+        list=list.filter(p => (p.paint_name||'').toLowerCase().includes(q) || (p.brand||'').toLowerCase().includes(q) || (p.type||'').toLowerCase().includes(q) || (p.sku||'').toLowerCase().includes(q));
       }
-
-      /******************************************************************
-       * START
-       ******************************************************************/
-      initApp();
-    </script>
-  </body>
+      const total=state.data.inventory.length;
+      const ownedCt=state.data.inventory.filter(p=>p.owned).length;
+      $('#paint-count').textContent = `(${total} paints)`;
+      $('#inventory-stats').textContent = `${ownedCt} owned`;
+      $('#owned-toggle-icon').textContent = state.ui.invOwnedOnly ? ' ' : ' ';
+      if(!list.length) {
+        empty.classList.remove('hidden');
+        grid.innerHTML='';
+        return;
+      }
+      empty.classList.add('hidden');
+      grid.innerHTML = list.map(p => `
+        <div class="bg-white rounded-xl p-3 shadow-sm hover:shadow-lg cursor-pointer relative group"
+             data-action="open-add"
+             data-payload="${encodeURIComponent(JSON.stringify({brand:p.brand, paint_name:p.paint_name, hex:p.hex, type:p.type, sku:p.sku||null}))}">
+          <div class="w-full aspect-square rounded-lg mb-2 shadow-inner relative" style="background:${p.hex}">
+            ${p.owned ? '<span class="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs">
+            <button class="absolute bottom-1 right-1 text-[10px] px-2 py-1 rounded-full bg-white/90 text-gray-700 shadow hover:bg-white"
+                    data-action="inv-toggle-owned" data-payload="${encodeURIComponent(JSON.stringify({id:p.id}))}">${p.owned?'Owned':'Not owned'}</button>
+          </div>
+          <h4 class="font-medium text-sm text-gray-800 truncate">${escapeHtml(p.paint_name)}</h4>
+          <p class="text-xs text-gray-500">${formatBrand(p.brand)} • <span class="font-semibold">${escapeHtml(p.type||PaintType.Other)}</span></p>
+          <p class="text-xs text-gray-400 font-mono uppercase mt-1">${String(p.hex||'').toUpperCase()}</p>
+          ${p.sku ? `<p class="text-[10px] text-gray-400 mt-1">SKU: <span class="font-mono">${escapeHtml(p.sku)}</span></p>` : ''}
+          <div class="flex items-center justify-between mt-2">
+            <div class="flex items-center gap-1">
+              <button class="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm"
+                      data-action="inv-qty" data-payload="${encodeURIComponent(JSON.stringify({id:p.id, delta:-1}))}">-</button>
+              <span class="text-sm font-medium w-6 text-center">${p.quantity||1}</span>
+              <button class="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm"
+                      data-action="inv-qty" data-payload="${encodeURIComponent(JSON.stringify({id:p.id, delta:1}))}">+</button>
+            </div>
+            <button class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition"
+                    data-action="inv-delete" data-payload="${encodeURIComponent(JSON.stringify({id:p.id}))}"> </button>
+          </div>
+        </div>
+      `).join('');
+    }
+    // Buylist render
+    function renderBuylist() {
+      const grid=$('#buylist-grid .grid');
+      const empty=$('#empty-buylist');
+      const count=$('#buylist-count');
+      const sub=$('#buylist-subtext');
+      const list=state.data.buylist.slice();
+      count.textContent = `(${list.length} items)`;
+      sub.textContent = state.settings.cart.avoidOwnedPurchases ? 'Owned paints are skipped automatically.' : 'Auto-dedupe is on.';
+      if (!list.length) {
+        empty.classList.remove('hidden');
+        grid.innerHTML='';
+        return;
+      }
+      empty.classList.add('hidden');
+      grid.innerHTML = list.map(it => `
+        <div class="bg-white rounded-xl p-3 shadow-sm hover:shadow-lg cursor-pointer relative group">
+          <div class="w-full aspect-square rounded-lg mb-2 shadow-inner" style="background:${it.hex}"></div>
+          <h4 class="font-medium text-sm text-gray-800 truncate">${escapeHtml(it.paint_name)}</h4>
+          <p class="text-xs text-gray-500">${formatBrand(it.brand)} • <span class="font-semibold">${escapeHtml(it.type||PaintType.Other)}</span></p>
+          <p class="text-xs text-gray-400 font-mono uppercase mt-1">${String(it.hex||'').toUpperCase()}</p>
+          <div class="mt-2 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <button class="w-7 h-7 rounded bg-gray-100 hover:bg-gray-200 text-gray-700"
+                      data-action="buy-qty" data-payload="${encodeURIComponent(JSON.stringify({id:it.id, delta:-1}))}">-</button>
+              <span class="text-sm font-semibold w-6 text-center">${it.quantity||1}</span>
+              <button class="w-7 h-7 rounded bg-gray-100 hover:bg-gray-200 text-gray-700"
+                      data-action="buy-qty" data-payload="${encodeURIComponent(JSON.stringify({id:it.id, delta:1}))}">+</button>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="text-xs px-2 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700 transition opacity-0 group-hover:opacity-100"
+                      data-action="buy-move-owned" data-payload="${encodeURIComponent(JSON.stringify({id:it.id}))}">Got it</button>
+              <button class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition"
+                      data-action="buy-delete" data-payload="${encodeURIComponent(JSON.stringify({id:it.id}))}"> </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+    // Export printable HTML
+    function buildPrintableHtml() {
+      const proj=activeProject();
+      const projectName = proj ? proj.name : 'Untitled Project';
+      const brandLock = state.settings.conversionBrand ? formatBrand(state.settings.conversionBrand) : 'Multi-brand';
+      const markers = state.matcher.markers || [];
+      const cart = state.data.buylist || [];
+      const markerCards = markers.map((m,i) => {
+        const b = state.settings.conversionBrand || fallbackRecipeBrand(m.colorHex);
+        const rec = recipeFor(m.colorHex, b);
+        const row = (label, obj) => obj?.pick
+          ? `<div style="font-size:13px;">• ${label}: <strong>${escapeHtml(obj.pick.paint_name)}</strong> <span class="print-muted">(${escapeHtml(formatBrand(obj.pick.brand))}, ${escapeHtml(obj.pick.type||'')}, ${String(obj.pick.hex||'').toUpperCase()})</span></div>`
+          : `<div style="font-size:13px;">• ${label}: <span class="print-muted">No suggestion</span></div>`;
+        return `
+          <div class="print-card" style="margin-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+              <div style="width:36px; height:36px; border-radius:8px; border:1px solid #e5e7eb; background:${m.colorHex};"></div>
+              <div>
+                <div style="font-weight:900; font-size:14px;">Point ${i+1} • ${m.colorHex.toUpperCase()}</div>
+                <div class="print-muted" style="font-size:12px;">Recipe brand: ${escapeHtml(formatBrand(b))}</div>
+              </div>
+            </div>
+            ${row('Base', rec.base)}
+            ${row('Shade', rec.shade)}
+            ${row('Highlight', rec.highlight)}
+          </div>
+        `;
+      }).join('') || `<div class="print-muted">No markers yet.</div>`;
+      const cartRows = cart.map(it => `
+        <tr>
+          <td style="padding:8px; border-bottom:1px solid #eee;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:18px; height:18px; border-radius:4px; border:1px solid #e5e7eb; background:${it.hex};"></div>
+              <div>
+                <div style="font-weight:700;">${escapeHtml(it.paint_name)}</div>
+                <div class="print-muted" style="font-size:11px;">${escapeHtml(formatBrand(it.brand))} • ${escapeHtml(it.type||'')}</div>
+              </div>
+            </div>
+          </td>
+          <td style="padding:8px; border-bottom:1px solid #eee; font-family:monospace;">${String(it.hex||'').toUpperCase()}</td>
+          <td style="padding:8px; border-bottom:1px solid #eee; text-align:center; font-weight:700;">${it.quantity||1}</td>
+        </tr>
+      `).join('');
+      return `
+        <div class="print-sheet">
+          <div style="text-align:center; margin-bottom:14px;">
+            <div style="font-size:26px; font-weight:900;">Miniature Paint Plan</div>
+            <div class="print-muted" style="font-size:12px;">${new Date().toLocaleString()}</div>
+          </div>
+          <div class="print-card" style="margin-bottom:12px;">
+            <div style="font-size:16px; font-weight:900;">Project</div>
+            <div style="margin-top:6px; font-size:13px;">
+              <div><strong>Name:</strong> ${escapeHtml(projectName)}</div>
+              <div><strong>Brand mode:</strong> ${escapeHtml(brandLock)}</div>
+              <div><strong>Markers:</strong> ${markers.length}</div>
+            </div>
+          </div>
+          <div class="print-card" style="margin-bottom:12px;">
+            <div style="font-size:16px; font-weight:900; margin-bottom:8px;">Recipes</div>
+            ${markerCards}
+          </div>
+          <div class="print-card">
+            <div style="font-size:16px; font-weight:900; margin-bottom:8px;">Buy List</div>
+            ${cart.length ? `
+              <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead>
+                  <tr>
+                    <th style="text-align:left; padding:8px; border-bottom:2px solid #e5e7eb;">Paint</th>
+                    <th style="text-align:left; padding:8px; border-bottom:2px solid #e5e7eb;">Hex</th>
+                    <th style="text-align:center; padding:8px; border-bottom:2px solid #e5e7eb;">Qty</th>
+                  </tr>
+                </thead>
+                <tbody>${cartRows}</tbody>
+              </table>
+            ` : `<div class="print-muted">Cart is empty.</div>`}
+          </div>
+        </div>
+      `;
+    }
+    function exportPrintablePdf() {
+      if (!window.html2pdf) return showToast('PDF library not loaded. Refresh.', 'error');
+      const htmlContent = buildPrintableHtml();
+      const opt = {
+        margin:[0,0,0,0],
+        filename:`miniature-paint-plan-${new Date().toISOString().split('T')[0]}.pdf`,
+        image:{type:'jpeg',quality:0.98},
+        html2canvas:{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff'},
+        jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+      };
+      window.html2pdf().set(opt).from(htmlContent).save()
+        .then(()=>showToast('Exported printable PDF','success'))
+        .catch(()=>showToast('Error generating PDF','error'));
+    }
+    // Add all recipes
+    function addAllMarkersToBuy() {
+      const markers=state.matcher.markers||[];
+      if (!markers.length) return;
+      let added=0;
+      for (const m of markers) added += addRecipeToBuy(m.id, m.colorHex);
+      saveState();
+      renderBuylist();
+      showToast(added ? `Added/updated ${added} cart items` : 'Nothing new to add', added ? 'success' : 'info');
+      switchView('buylist');
+    }
+    // Views
+    function switchView(view) {
+      state.ui.currentView=view; saveState();
+      $$('.tab-btn').forEach(b=>{ b.classList.remove('tab-active'); b.classList.add('text-white/70'); });
+      $$('[id^="view-"]').forEach(v=>v.classList.add('hidden'));
+      const tab=document.querySelector(`.tab-btn[data-tab="${view}"]`);
+      if (tab) { tab.classList.add('tab-active'); tab.classList.remove('text-white/70'); }
+      const panel=$('#view-'+view);
+      if (panel) panel.classList.remove('hidden');
+      if (view==='inventory') renderInventory();
+      if (view==='buylist') renderBuylist();
+    }
+    // Event delegation (single click handler for actions)
+    document.addEventListener('click', (e) => {
+      const btn=e.target.closest('[data-action]');
+      if (!btn) return;
+      const a=btn.dataset.action;
+      if (a==='modal-close') return closeModal();
+      if (a==='tab') return switchView(btn.dataset.tab);
+      if (a==='open-projects') return openProjectsModal();
+      if (a==='proj-create') {
+        const name=String($('#proj-new-name')?.value||'').trim();
+        if (!name) return showToast('Enter a project name','error');
+        createProject(name);
+        closeModal();
+        openProjectsModal();
+        return;
+      }
+      if (a==='proj-load') { const p=decodePayload(btn); if (p?.id) { closeModal(); loadProject(p.id); } return; }
+      if (a==='proj-delete') {
+        const p=decodePayload(btn); if(!p?.id) return;
+        state.data.projects = state.data.projects.filter(x=>x.id!==p.id);
+        if (state.data.activeProjectId===p.id) state.data.activeProjectId=null;
+        saveState(); closeModal(); openProjectsModal(); renderHeaderProject(); showToast('Project deleted','success'); return;
+      }
+      if (a==='save-project-snapshot') return saveSnapshot();
+      if (a==='open-advanced') return openAdvancedModal();
+      if (a==='advanced-save') return saveAdvanced();
+      if (a==='set-conversion') {
+        const p=decodePayload(btn);
+        state.settings.conversionBrand = p?.brand || null;
+        saveState();
+        closeModal();
+        openAdvancedModal();
+        updateColorMatches();
+        showToast(state.settings.conversionBrand ? `Brand lock: ${formatBrand(state.settings.conversionBrand)}` : 'Brand lock off', 'info');
+        return;
+      }
+      if (a==='export-plan') return exportPrintablePdf();
+      if (a==='add-marker') return addMarker();
+      if (a==='clear-image') return clearImage();
+      if (a==='marker-delete') { const id=parseInt(btn.dataset.markerId||'0',10); if(id) deleteMarker(id); return; }
+      if (a==='recipe-toggle') {
+        const p=decodePayload(btn); if(!p?.markerId) return;
+        const k=String(p.markerId);
+        state.ui.recipeExpandedByMarkerId[k] = !state.ui.recipeExpandedByMarkerId[k];
+        saveState(); updateColorMatches(); return;
+      }
+      if (a==='recipe-add-all') {
+        const p=decodePayload(btn); if(!p?.markerId) return;
+        const m=state.matcher.markers.find(x=>x.id===p.markerId);
+        if(!m) return;
+        const added=addRecipeToBuy(m.id,m.colorHex);
+        saveState(); renderBuylist(); showToast(added?`Updated ${added} cart items`:'Nothing new to add', added?'success':'info'); return;
+      }
+      if (a==='add-all-to-buylist') return addAllMarkersToBuy();
+      if (a==='open-add') { const p=decodePayload(btn); if(p) openAddModal(p); return; }
+      if (a==='buy-add') {
+        const p=decodePayload(btn); if(!p) return;
+        const r=addToBuySmart({brand:p.brand, paint_name:p.paint_name, hex:p.hex, type:p.type||PaintType.Other, sku:p.sku||null}, {reason:p.reason||'Recipe', role:p.role||null, qtyAdd:1});
+        saveState(); renderBuylist();
+        showToast(r.ok?'Added to Buy List':(r.skipped==='owned'?'Skipped (already owned)':'Could not add'), r.ok?'success':'info');
+        return;
+      }
+      if (a==='modal-add-inv') { const p=decodePayload(btn); if(!p) return; addToInventory(p, modalQty()); closeModal(); renderInventory(); updateColorMatches(); showToast('Added to inventory','success'); return; }
+      if (a==='modal-add-buy') { const p=decodePayload(btn); if(!p) return; const r=addToBuySmart(p, {reason:modalReason(), qtyAdd:modalQty()}); closeModal(); renderBuylist(); showToast(r.ok?'Added to Buy List':(r.skipped==='owned'?'Skipped (already owned)':'Could not add'), r.ok?'success':'info'); return; }
+      if (a==='inv-brand') { state.ui.invBrand = btn.dataset.brand || 'all'; saveState(); renderInventory(); return; }
+      if (a==='inv-owned-only') { state.ui.invOwnedOnly=!state.ui.invOwnedOnly; saveState(); renderInventory(); return; }
+      if (a==='inv-add') {
+        const brand=$('#new-paint-brand').value;
+        const name=String($('#new-paint-name').value||'').trim();
+        const type=$('#new-paint-type').value || PaintType.Other;
+        const hex=$('#new-paint-color').value || '#000000';
+        const qty=clamp(parseInt($('#new-paint-qty').value,10)||1,1,999);
+        const sku=String($('#new-paint-sku').value||'').trim()||null;
+        if(!name) return showToast('Enter a paint name','error');
+        addToInventory({brand, paint_name:name, hex, type, sku}, qty);
+        $('#new-paint-name').value=''; $('#new-paint-sku').value='';
+        saveState(); renderInventory(); updateColorMatches(); showToast('Inventory updated','success'); return;
+      }
+      if (a==='inv-toggle-owned') {
+        const p=decodePayload(btn); const rec=state.data.inventory.find(x=>x.id===p?.id);
+        if(!rec) return;
+        rec.owned=!rec.owned; rec.updated_at=nowIso(); saveState(); renderInventory(); updateColorMatches(); return;
+      }
+      if (a==='inv-qty') {
+        const p=decodePayload(btn); const rec=state.data.inventory.find(x=>x.id===p?.id);
+        if(!rec) return;
+        const next=(rec.quantity||1) + (p.delta||0);
+        if (next<=0) state.data.inventory = state.data.inventory.filter(x=>x.id!==rec.id);
+        else { rec.quantity=clamp(next,1,999); rec.owned=true; rec.updated_at=nowIso(); }
+        saveState(); renderInventory(); updateColorMatches(); return;
+      }
+      if (a==='inv-delete') { const p=decodePayload(btn); state.data.inventory = state.data.inventory.filter(x=>x.id!==p?.id); saveState(); renderInventory(); updateColorMatches(); showToast('Removed','success'); return; }
+      if (a==='buylist-add') {
+        const brand=$('#buylist-paint-brand').value;
+        const name=String($('#buylist-paint-name').value||'').trim();
+        const type=$('#buylist-paint-type').value || PaintType.Other;
+        const hex=$('#buylist-paint-color').value || '#000000';
+        const qty=clamp(parseInt($('#buylist-paint-qty').value,10)||1,1,99);
+        if(!name) return showToast('Enter a paint name','error');
+        const r=addToBuySmart({brand, paint_name:name, hex, type, sku:null}, {reason:'Manual add', qtyAdd:qty});
+        if (r.ok) { $('#buylist-paint-name').value=''; renderBuylist(); showToast('Added to Buy List','success'); }
+        else showToast(r.skipped==='owned'?'Skipped (already owned)':'Could not add','info');
+        return;
+      }
+      if (a==='buy-qty') {
+        const p=decodePayload(btn); const rec=state.data.buylist.find(x=>x.id===p?.id);
+        if(!rec) return;
+        const next=(rec.quantity||1) + (p.delta||0);
+        if (next<=0) state.data.buylist = state.data.buylist.filter(x=>x.id!==rec.id);
+        else { rec.quantity=clamp(next,1,99); rec.updated_at=nowIso(); }
+        saveState(); renderBuylist(); return;
+      }
+      if (a==='buy-delete') { const p=decodePayload(btn); state.data.buylist = state.data.buylist.filter(x=>x.id!==p?.id); saveState(); renderBuylist(); showToast('Removed','success'); return; }
+      if (a==='buy-move-owned') {
+        const p=decodePayload(btn); const rec=state.data.buylist.find(x=>x.id===p?.id);
+        if(!rec) return;
+        addToInventory({brand:rec.brand, paint_name:rec.paint_name, hex:rec.hex, type:rec.type, sku:rec.sku||null}, rec.quantity||1);
+        state.data.buylist = state.data.buylist.filter(x=>x.id!==rec.id);
+        saveState(); renderBuylist(); renderInventory(); updateColorMatches(); showToast('Moved to Inventory','success'); return;
+      }
+      if (a==='buylist-clear') { state.data.buylist=[]; saveState(); renderBuylist(); showToast('Buy List cleared','success'); return; }
+    });
+    // Inputs
+    $('#search-paints').addEventListener('input', (e) => { state.ui.invSearch=String(e.target.value||''); saveState(); renderInventory(); });
+    $('#buylist-paint-color').addEventListener('input', (e) => { $('#buylist-color-preview').style.backgroundColor=e.target.value; });
+    // Upload zone
+    const uz=$('#upload-zone');
+    uz.addEventListener('dragover', (e)=>{ e.preventDefault(); uz.classList.add('border-purple-500'); });
+    uz.addEventListener('dragleave', ()=>uz.classList.remove('border-purple-500'));
+    uz.addEventListener('drop', (e)=>{ e.preventDefault(); uz.classList.remove('border-purple-500');
+      const f=e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) loadMatcherImageFromFile(f);
+    });
+    $('#image-upload').addEventListener('change', (e)=>{ const f=e.target.files?.[0]; if(f) loadMatcherImageFromFile(f); });
+    // Drag markers
+    document.addEventListener('mousedown', (e)=>{
+      const el=e.target.closest('.color-marker');
+      if (!el) return;
+      if (e.target.closest('[data-action="marker-delete"]')) return;
+      startDragMarker(el, e);
+    });
+    document.addEventListener('mousemove', (e)=>moveDrag(e));
+    document.addEventListener('mouseup', ()=>stopDrag());
+    window.addEventListener('resize', ()=>{ if(uploadedImage) drawImage(); });
+    // Boot
+    function boot() {
+      renderHeaderProject();
+      $('#buylist-color-preview').style.backgroundColor = $('#buylist-paint-color').value;
+      if (state.matcher.uploadedImageDataUrl) {
+        loadMatcherImageFromDataUrl(state.matcher.uploadedImageDataUrl, () => { renderMarkers(); updateColorMatches(); });
+      } else {
+        updateColorMatches();
+      }
+      switchView(state.ui.currentView || 'matcher');
+      renderInventory();
+      renderBuylist();
+    }
+    boot();
+  })();
+  </script>
+</body>
 </html>
