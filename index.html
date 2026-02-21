@@ -8,1339 +8,1165 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
+  rel="stylesheet" />
   <style>
-    * { font-family: 'Outfit', sans-serif; }
-    .gradient-bg { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #3730a3 100%); }
-    .glass-card { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); }
-    .scrollbar-thin::-webkit-scrollbar { width: 6px; }
-    .scrollbar-thin::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 3px; }
-    .scrollbar-thin::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 3px; }
-    .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #a5b4fc; }
-    input[type="file"] { display:none; }
-    .upload-zone { border: 2px dashed #6366f1; transition: all 0.3s;
-      background: linear-gradient(135deg, rgba(99,102,241,0.05) 0%, rgba(139,92,246,0.05) 100%); }
-    .upload-zone:hover { border-color:#8b5cf6;
-      background: linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(139,92,246,0.1) 100%); }
-    .color-marker { cursor: grab; transition: box-shadow 0.2s; }
-    .color-marker:active { cursor: grabbing; }
-    .color-marker:hover { box-shadow: 0 0 0 4px rgba(255,255,255,0.5); }
-    .tab-active { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; }
-    .modal-backdrop { background: rgba(0,0,0,0.5); }
-    .print-sheet { background:#fff; color:#111827; width:210mm; padding:18mm; }
-    .print-muted { color:#6b7280; }
-    .print-card { border:1px solid #e5e7eb; border-radius:10px; padding:12px; }
+    *{font-family:'Outfit',sans-serif} body{box-sizing:border-box}
+    .paint-swatch{transition:all .2s ease}.paint-swatch:hover{transform:scale(1.03);box-shadow:0 8px 25px
+    rgba(0,0,0,.18)}
+    .color-marker{cursor:grab;transition:box-shadow
+    .2s}.color-marker:active{cursor:grabbing}.color-marker:hover{box-shadow:0 0 0 4px rgba(255,255,255,.45)}
+    .tab-active{background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);color:#fff}
+    .brand-pill{transition:all .2s}.brand-pill:hover{transform:translateY(-2px)}
+    input[type="file"]{display:none}
+    .upload-zone{border:2px dashed #6366f1;transition:all
+    .3s;background:linear-gradient(135deg,rgba(99,102,241,.05) 0%,rgba(139,92,246,.05) 100%)}
+    .upload-zone:hover{border-color:#8b5cf6;background:linear-gradient(135deg,rgba(99,102,241,.1)
+    0%,rgba(139,92,246,.1) 100%)}
+    .glass-card{background:rgba(255,255,255,.95);backdrop-filter:blur(10px)}
+    .gradient-bg{background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#3730a3 100%)}
+    .scrollbar-thin::-webkit-scrollbar{width:6px}
+    .scrollbar-thin::-webkit-scrollbar-track{background:#f1f5f9;border-radius:3px}
+    .scrollbar-thin::-webkit-scrollbar-thumb{background:#c7d2fe;border-radius:3px}
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover{background:#a5b4fc}
+    .paint-cursor{position:absolute;pointer-events:none;border:2px solid
+    rgba(255,255,255,.85);border-radius:9999px;transform:translate(-50%,-50%);mix-blend-mode:screen;display:no
+    ne}
   </style>
 </head>
 <body class="h-full gradient-bg overflow-auto">
-  <div class="h-full w-full flex flex-col">
-    <header class="flex-shrink-0 px-6 py-5 flex items-center justify-between border-b border-white/10 gap-4">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shadow-lg">
-          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M5 3a2 2 0 00-2 2v6h16V5a2 2 0 00-2-2H5zm16 8H2v5a2 2 0 002 2h12a2 2 0 002-2v-5z" />
-          </svg>
-        </div>
-        <div>
-          <h1 class="text-xl font-semibold text-white leading-tight">Miniature Paint Assistant</h1>
-          <div class="text-xs text-white/70 flex items-center gap-2">
-            <span id="active-project-label">No project</span>
-            <span class="text-white/40">•</span>
-            <button class="text-white/80 hover:text-white underline decoration-white/30" data-action="open-projects">Projects</button>
+<div id="app" class="h-full w-full flex flex-col">
+  <header class="flex-shrink-0 px-6 py-5 flex items-center justify-between border-b border-white/10">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center
+      justify-center shadow-lg">
+        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a2 2 0 00-2
+        2v6h16V5a2 2 0 00-2-2H5zm16 8H2v5a2 2 0 002 2h12a2 2 0 002-2v-5z"/></svg>
+      </div>
+      <div>
+        <h1 class="text-xl font-semibold text-white">Paint Assistant</h1>
+        <p class="text-xs text-white/60 -mt-0.5">Match • Recipe • Project • Cart</p>
+      </div>
+    </div>
+    <nav class="flex gap-2 bg-white/10 p-1 rounded-lg backdrop-blur">
+      <button class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm transition-all tab-active"
+      data-view="matcher">Color Matcher</button>
+      <button class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm text-white/70 hover:text-white
+      hover:bg-white/10 transition-all" data-view="projects">Projects</button>
+      <button class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm text-white/70 hover:text-white
+      hover:bg-white/10 transition-all" data-view="inventory">My Inventory</button>
+      <button class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm text-white/70 hover:text-white
+      hover:bg-white/10 transition-all" data-view="buylist">Buy List</button>
+      <button class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm text-white/70 hover:text-white
+      hover:bg-white/10 transition-all" data-view="test">Test Paint</button>
+    </nav>
+  </header>
+  <main class="flex-1 px-6 pb-6 overflow-hidden">
+    <!-- Matcher -->
+    <div id="view-matcher" class="h-full flex gap-6">
+      <div class="flex-1 glass-card rounded-2xl p-6 flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2"><div class="w-1.5 h-1.5
+          bg-indigo-600 rounded-full"></div>Reference Image</h2>
+          <div class="flex items-center gap-2">
+            <button class="px-3 py-2 rounded-lg bg-white text-gray-700 border border-gray-200 text-xs
+            font-medium hover:bg-gray-50" data-action="open-advanced">Advanced</button>
+            <button class="px-3 py-2 rounded-lg bg-white text-gray-700 border border-gray-200 text-xs
+            font-medium hover:bg-gray-50" data-action="export-plan" id="export-plan-btn" disabled>Export
+            Plan</button>
           </div>
         </div>
-      </div>
-      <nav class="flex gap-2 bg-white/10 p-1 rounded-lg backdrop-blur flex-wrap">
-        <button data-action="tab" data-tab="matcher" class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm transition-all tab-active">Matcher</button>
-        <button data-action="tab" data-tab="inventory" class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm text-white/70 hover:text-white hover:bg-white/10 transition-all">Inventory</button>
-        <button data-action="tab" data-tab="buylist" class="tab-btn px-4 py-1.5 rounded-md font-medium text-sm text-white/70 hover:text-white hover:bg-white/10 transition-all">Buy List</button>
-      </nav>
-      <div class="hidden md:flex items-center gap-2">
-        <button class="px-3 py-2 rounded-lg bg-white/10 text-white/90 hover:bg-white/15 text-sm" data-action="open-advanced">Advanced</button>
-      </div>
-    </header>
-    <main class="flex-1 px-6 pb-6 overflow-hidden">
-      <!-- Matcher -->
-      <div id="view-matcher" class="h-full flex gap-6">
-        <div class="flex-1 glass-card rounded-2xl p-6 flex flex-col overflow-hidden">
-          <div class="flex items-start justify-between gap-4 mb-4">
-            <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <div class="w-1.5 h-1.5 bg-indigo-600 rounded-full"></div> Reference Image
-            </h2>
-            <div class="flex items-center gap-2 flex-wrap justify-end">
-              <button class="px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm border border-gray-200"
-                      data-action="save-project-snapshot">Save Snapshot</button>
-              <button class="px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm border border-gray-200"
-                      data-action="open-advanced">Recipe Settings</button>
+        <div id="upload-zone" class="flex-1 upload-zone rounded-xl flex flex-col items-center justify-center">
+          <label for="image-upload" class="cursor-pointer flex flex-col items-center">
+            <div class="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center mb-4">
+              <svg class="w-10 h-10 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6
+                  20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
             </div>
+            <p class="text-indigo-600 font-medium text-lg mb-1">Upload your reference image</p>
+            <p class="text-gray-500 text-sm">Click or drag & drop your miniature photo</p>
+          </label>
+          <input type="file" id="image-upload" accept="image/*" />
+        </div>
+        <div id="image-container" class="flex-1 relative rounded-xl overflow-hidden bg-gray-100 hidden">
+          <canvas id="image-canvas" class="w-full h-full object-contain"></canvas>
+          <div id="markers-container" class="absolute inset-0"></div>
+          <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center">
+            <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium text-sm
+            hover:bg-indigo-700 transition shadow-lg flex items-center gap-2" data-action="add-marker">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path
+              stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+              Add Color Point
+            </button>
+            <button class="px-4 py-2 bg-white/90 text-gray-700 rounded-lg font-medium text-sm hover:bg-white
+            transition shadow-lg" data-action="clear-image">Change Image</button>
           </div>
-          <div id="upload-zone" class="flex-1 upload-zone rounded-xl flex flex-col items-center justify-center">
-            <label for="image-upload" class="cursor-pointer flex flex-col items-center">
-              <div class="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center mb-4">
-                <svg class="w-10 h-10 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <p class="text-indigo-600 font-medium text-lg mb-1">Upload your reference image</p>
-              <p class="text-gray-500 text-sm">Click or drag & drop your miniature photo</p>
+        </div>
+      </div>
+      <div class="w-96 glass-card rounded-2xl p-6 flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2"><div class="w-1.5 h-1.5
+          bg-purple-600 rounded-full"></div>Matches & Recipes</h2>
+          <select id="brand-lock" class="px-2 py-2 rounded-lg border border-gray-200 text-xs">
+            <option value="">Multi-brand</option>
+            <option value="citadel">Citadel</option>
+            <option value="vallejo">Vallejo</option>
+            <option value="army_painter">Army Painter</option>
+            <option value="pro_acryl">Pro Acryl</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2 mb-4">
+          <button class="flex-1 px-3 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg
+          font-medium text-xs hover:from-indigo-700 hover:to-purple-700 transition shadow-lg"
+          data-action="add-all-to-buylist" id="add-all-to-buylist-btn" disabled>
+            Add All to Buy List
+          </button>
+        </div>
+        <div id="color-matches" class="flex-1 overflow-y-auto scrollbar-thin space-y-4"></div>
+      </div>
+    </div>
+    <!-- Projects -->
+    <div id="view-projects" class="h-full hidden flex gap-6 overflow-hidden">
+      <div class="flex-1 glass-card rounded-2xl p-6 flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2"><div class="w-1.5 h-1.5
+          bg-indigo-600 rounded-full"></div>Project Profiles</h2>
+          <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700
+          transition shadow-lg" data-action="new-project">New Project</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 overflow-y-auto scrollbar-thin"
+        id="projects-grid"></div>
+        <div id="projects-empty" class="text-center py-16 text-gray-400 hidden">
+          <p class="font-medium text-lg">No projects yet</p>
+          <p class="text-sm mt-1">Create one to save markers, recipes, and your cart.</p>
+        </div>
+      </div>
+      <div class="w-96 glass-card rounded-2xl p-6 flex flex-col overflow-hidden">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"><div class="w-1.5 h-1.5
+        bg-purple-600 rounded-full"></div>Project Actions</h2>
+        <div class="space-y-3 text-sm text-gray-600 overflow-y-auto scrollbar-thin">
+          <div class="bg-gray-50 rounded-xl p-4">
+            <p class="font-medium text-gray-800 mb-1">Save current work</p>
+            <p>Saves the current image thumbnail, markers, brand lock, and buy list.</p>
+            <button class="mt-3 w-full px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50
+            text-sm font-medium" data-action="save-to-project">Save Current to Project</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Inventory -->
+    <div id="view-inventory" class="h-full hidden flex flex-col gap-6 overflow-hidden">
+      <div class="glass-card rounded-2xl p-4 flex-shrink-0">
+        <div class="flex flex-wrap gap-3 items-center justify-between">
+          <div class="flex gap-2 flex-wrap">
+            <button class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white"
+            data-brand="all">All Brands</button>
+            <button class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700
+            hover:bg-gray-200" data-brand="citadel">Citadel</button>
+            <button class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700
+            hover:bg-gray-200" data-brand="vallejo">Vallejo</button>
+            <button class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700
+            hover:bg-gray-200" data-brand="army_painter">Army Painter</button>
+            <button class="brand-pill px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700
+            hover:bg-gray-200" data-brand="pro_acryl">Pro Acryl</button>
+          </div>
+          <div class="flex gap-2">
+            <div class="relative">
+              <input type="text" id="search-paints" placeholder="Search paints..." class="pl-10 pr-4 py-2
+              rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200
+              outline-none text-sm w-64" />
+              <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none"
+              stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round"
+              stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+            <button class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700
+            hover:bg-gray-50 flex items-center gap-2" data-action="toggle-owned-only"><span
+            id="owned-toggle-icon">☐</span> Owned Only</button>
+          </div>
+        </div>
+      </div>
+      <div class="glass-card rounded-2xl p-4 flex-shrink-0">
+        <div class="flex gap-3 items-end flex-wrap">
+          <div class="flex-1 min-w-48">
+            <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Brand</label>
+            <select id="new-paint-brand" class="w-full px-3 py-2 rounded-lg border border-gray-200
+            focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm">
+              <option value="citadel">Citadel</option><option value="vallejo">Vallejo</option><option
+              value="army_painter">Army Painter</option><option value="pro_acryl">Pro Acryl</option>
+            </select>
+          </div>
+          <div class="flex-1 min-w-48">
+            <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Paint
+            Name</label>
+            <input type="text" id="new-paint-name" placeholder="e.g., Mephiston Red" class="w-full px-3 py-2
+            rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200
+            outline-none text-sm" />
+          </div>
+          <div class="w-28">
+            <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Type</label>
+            <select id="new-paint-type" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm">
+              <option value="Base">Base</option><option value="Layer">Layer</option><option
+              value="Shade">Shade</option><option value="Metallic">Metallic</option><option
+              value="Contrast">Contrast</option><option value="Technical">Technical</option><option
+              value="Primer">Primer</option><option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="w-24">
+            <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Color</label>
+            <input type="color" id="new-paint-color" value="#c21f30" class="w-full h-10 rounded-lg border
+            border-gray-200 cursor-pointer" />
+          </div>
+          <div class="w-20">
+            <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Qty</label>
+            <input type="number" id="new-paint-qty" value="1" min="1" class="w-full px-3 py-2 rounded-lg
+            border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none
+            text-sm" />
+          </div>
+          <button class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg
+          font-medium text-sm hover:from-indigo-700 hover:to-purple-700 transition shadow-lg flex items-center
+          gap-2" data-action="add-inventory">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path
+            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+            Add to Inventory
+          </button>
+        </div>
+      </div>
+      <div class="flex-1 glass-card rounded-2xl p-6 overflow-hidden flex flex-col">
+        <div class="flex justify-between items-center mb-4 flex-shrink-0">
+          <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2"><div class="w-1.5 h-1.5
+          bg-amber-500 rounded-full"></div>My Paint Collection <span id="paint-count" class="text-sm
+          font-normal text-gray-500">(0 paints)</span></h2>
+          <div class="flex items-center gap-2 text-sm text-gray-500"><span id="inventory-stats">0
+          owned</span></div>
+        </div>
+        <div id="inventory-grid" class="flex-1 overflow-y-auto scrollbar-thin">
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6
+          gap-3"></div>
+          <div id="empty-inventory" class="text-center py-16 text-gray-400">
+            <p class="font-medium text-lg">Your inventory is empty</p>
+            <p class="text-sm mt-1">Add paints using the form above</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Buy list -->
+    <div id="view-buylist" class="h-full hidden flex flex-col gap-6 overflow-hidden">
+      <div class="glass-card rounded-2xl p-4 flex-shrink-0">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div class="flex items-center gap-3 flex-wrap">
+            <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2"><div class="w-1.5 h-1.5
+            bg-purple-600 rounded-full"></div>Items to Buy <span id="buylist-count" class="text-sm font-normal
+            text-gray-500">(0 items)</span></h2>
+            <label class="flex items-center gap-2 text-xs text-gray-700 bg-white border border-gray-200
+            rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-50">
+              <input type="checkbox" id="cart-skip-owned" class="accent-indigo-600" /> Skip owned paints
             </label>
-            <input type="file" id="image-upload" accept="image/*" />
           </div>
-          <div id="image-container" class="flex-1 relative rounded-xl overflow-hidden bg-gray-100 hidden">
-            <canvas id="image-canvas" class="w-full h-full object-contain"></canvas>
-            <div id="markers-container" class="absolute inset-0"></div>
-            <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center">
-              <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition shadow-lg flex items-center gap-2"
-                      data-action="add-marker">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg> Add Color Point
-              </button>
-              <button class="px-4 py-2 bg-white/90 text-gray-700 rounded-lg font-medium text-sm hover:bg-white transition shadow-lg"
-                      data-action="clear-image">Change Image</button>
-            </div>
-          </div>
-        </div>
-        <div class="w-96 glass-card rounded-2xl p-6 flex flex-col overflow-hidden">
-          <div class="flex items-start justify-between gap-3 mb-2">
-            <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <div class="w-1.5 h-1.5 bg-purple-600 rounded-full"></div> Paint Plan
-            </h2>
-            <button class="px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm border border-gray-200"
-                    data-action="open-advanced">Advanced</button>
-          </div>
-          <div class="flex items-center gap-2 mb-4 flex-wrap">
-            <button id="export-matches-btn" class="px-3 py-1.5 bg-white text-gray-700 rounded-lg font-medium text-xs hover:bg-gray-50 transition shadow border border-gray-200 hidden"
-                    data-action="export-plan">Export Printable PDF</button>
-            <button id="add-all-buylist-btn" class="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium text-xs hover:from-indigo-700 hover:to-purple-700 transition shadow-lg hidden"
-                    data-action="add-all-to-buylist">Add All (Recipes) to Buy List</button>
-          </div>
-          <div id="color-matches" class="flex-1 overflow-y-auto scrollbar-thin space-y-4"></div>
+          <button class="px-4 py-2 rounded-lg bg-white border border-gray-200 text-sm font-medium
+          hover:bg-gray-50" data-action="clear-buylist">Clear cart</button>
         </div>
       </div>
-      <!-- Inventory -->
-      <div id="view-inventory" class="h-full hidden flex flex-col gap-6 overflow-hidden">
-        <div class="glass-card rounded-2xl p-4 flex-shrink-0">
-          <div class="flex items-center justify-between gap-3 flex-wrap">
-            <div class="flex gap-2 flex-wrap">
-              <button data-action="inv-brand" data-brand="all" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white">All Brands</button>
-              <button data-action="inv-brand" data-brand="citadel" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Citadel</button>
-              <button data-action="inv-brand" data-brand="vallejo" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Vallejo</button>
-              <button data-action="inv-brand" data-brand="army_painter" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Army Painter</button>
-              <button data-action="inv-brand" data-brand="pro_acryl" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Pro Acryl</button>
-            </div>
-            <div class="flex items-center gap-2 flex-wrap">
-              <input id="search-paints" placeholder="Search paints..." class="px-3 py-2 rounded-lg border border-gray-200 text-sm w-64" />
-              <button id="show-owned-only" class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                      data-action="inv-owned-only"><span id="owned-toggle-icon"> </span> Owned Only</button>
-              <button class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                      data-action="open-projects">Projects</button>
-            </div>
-          </div>
-        </div>
-        <div class="glass-card rounded-2xl p-4 flex-shrink-0">
-          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-            <div class="md:col-span-2">
-              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Brand</label>
-              <select id="new-paint-brand" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm">
-                <option value="citadel">Citadel</option>
-                <option value="vallejo">Vallejo</option>
-                <option value="army_painter">Army Painter</option>
-                <option value="pro_acryl">Pro Acryl</option>
-              </select>
-            </div>
-            <div class="md:col-span-3">
-              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Paint Name</label>
-              <input id="new-paint-name" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" placeholder="e.g., Mephiston Red" />
-            </div>
-            <div class="md:col-span-2">
-              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Type</label>
-              <select id="new-paint-type" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm">
-                <option>Base</option><option>Layer</option><option>Shade</option><option>Metallic</option><option>Primer</option><option>Technical</option><option>Contrast</option><option>Other</option>
-              </select>
-            </div>
-            <div class="md:col-span-1">
-              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Color</label>
-              <input type="color" id="new-paint-color" value="#c21f30" class="w-full h-10 rounded-lg border border-gray-200 cursor-pointer" />
-            </div>
-            <div class="md:col-span-1">
-              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Qty</label>
-              <input type="number" id="new-paint-qty" value="1" min="1" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-            </div>
-            <div class="md:col-span-2">
-              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">SKU (optional)</label>
-              <input id="new-paint-sku" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" placeholder="future retail" />
-            </div>
-            <div class="md:col-span-1">
-              <button class="w-full px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium text-sm hover:from-indigo-700 hover:to-purple-700 transition shadow-lg"
-                      data-action="inv-add">Add</button>
-            </div>
-          </div>
-        </div>
-        <div class="flex-1 glass-card rounded-2xl p-6 overflow-hidden flex flex-col">
-          <div class="flex justify-between items-center mb-4 flex-shrink-0">
-            <h2 class="text-lg font-semibold text-gray-800">My Paint Collection <span id="paint-count" class="text-sm font-normal text-gray-500">(0 paints)</span></h2>
-            <div class="text-sm text-gray-500" id="inventory-stats">0 owned</div>
-          </div>
-          <div id="inventory-grid" class="flex-1 overflow-y-auto scrollbar-thin">
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"></div>
-            <div id="empty-inventory" class="text-center py-16 text-gray-400 hidden">No paints yet.</div>
+      <div class="flex-1 glass-card rounded-2xl p-6 overflow-hidden flex flex-col">
+        <div id="buylist-grid" class="flex-1 overflow-y-auto scrollbar-thin"><div class="grid grid-cols-2
+        sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"></div>
+          <div id="empty-buylist" class="text-center py-16 text-gray-400">
+            <p class="font-medium text-lg">Your buy list is empty</p><p class="text-sm mt-1">Add paints from
+            matches/recipes</p>
           </div>
         </div>
       </div>
-      <!-- Buy list -->
-      <div id="view-buylist" class="h-full hidden flex flex-col gap-6 overflow-hidden">
-        <div class="glass-card rounded-2xl p-4 flex-shrink-0">
-          <div class="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <div class="text-sm font-semibold text-gray-800">Smart Cart Hygiene</div>
-              <div class="text-xs text-gray-500" id="buylist-subtext">Auto-dedupe • quantity suggestions • avoids owned duplicates</div>
-            </div>
-            <div class="flex items-center gap-2">
-              <button class="px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50" data-action="buylist-clear">Clear</button>
-              <button class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 shadow" data-action="export-plan">Export Printable PDF</button>
-            </div>
+    </div>
+    <!-- Test -->
+    <div id="view-test" class="h-full hidden flex gap-6 overflow-hidden">
+      <div class="flex-1 glass-card rounded-2xl p-6 flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between gap-4 mb-4">
+          <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2"><div class="w-1.5 h-1.5
+          bg-indigo-600 rounded-full"></div>Test Paint</h2>
+          <div class="flex items-center gap-2 flex-wrap">
+            <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Brush</label>
+            <input id="brush-size" type="range" min="4" max="60" value="18" class="w-40" />
+            <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Opacity</label>
+            <input id="brush-opacity" type="range" min="5" max="100" value="55" class="w-40" />
           </div>
         </div>
-        <div class="glass-card rounded-2xl p-4 flex-shrink-0">
-          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-            <div class="md:col-span-2">
-              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Brand</label>
-              <select id="buylist-paint-brand" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm">
-                <option value="citadel">Citadel</option><option value="vallejo">Vallejo</option><option value="army_painter">Army Painter</option><option value="pro_acryl">Pro Acryl</option>
-              </select>
-            </div>
-            <div class="md:col-span-4">
-              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Paint Name</label>
-              <input id="buylist-paint-name" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" placeholder="e.g., Mephiston Red" />
-            </div>
-            <div class="md:col-span-2">
-              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Type</label>
-              <select id="buylist-paint-type" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm">
-                <option>Base</option><option>Layer</option><option>Shade</option><option>Metallic</option><option>Primer</option><option>Technical</option><option>Contrast</option><option>Other</option>
-              </select>
-            </div>
-            <div class="md:col-span-2">
-              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Color</label>
-              <div class="flex gap-2 items-center">
-                <input type="color" id="buylist-paint-color" value="#c21f30" class="w-12 h-10 rounded-lg border border-gray-200 cursor-pointer" />
-                <div id="buylist-color-preview" class="w-12 h-10 rounded-lg border border-gray-200" style="background:#c21f30"></div>
-              </div>
-            </div>
-            <div class="md:col-span-1">
-              <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">Qty</label>
-              <input type="number" id="buylist-paint-qty" value="1" min="1" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-            </div>
-            <div class="md:col-span-1">
-              <button class="w-full px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium text-sm hover:from-indigo-700 hover:to-purple-700 transition shadow-lg"
-                      data-action="buylist-add">Add</button>
-            </div>
+        <div class="flex items-center gap-3 mb-4 flex-wrap">
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Paint Color</label>
+            <input type="color" id="test-paint-color" value="#c21f30" class="w-12 h-10 rounded-lg border
+            border-gray-200 cursor-pointer" />
+            <div id="test-paint-preview" class="w-12 h-10 rounded-lg border-2 border-gray-200 shadow-inner"
+            style="background-color:#c21f30"></div>
           </div>
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Pick from
+            Inventory</label>
+            <select id="test-inv-pick" class="px-3 py-2 rounded-lg border border-gray-200
+            focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm min-w-[240px]">
+              <option value="">— Select a paint —</option>
+            </select>
+          </div>
+          <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700
+          transition shadow-lg" data-action="test-upload">Upload Image</button>
+          <input type="file" id="test-image-upload" accept="image/*" />
+          <button class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-50
+          transition shadow" data-action="test-undo">Undo</button>
+          <button class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-50
+          transition shadow" data-action="test-clear">Clear Paint</button>
         </div>
-        <div class="flex-1 glass-card rounded-2xl p-6 overflow-hidden flex flex-col">
-          <div class="flex justify-between items-center mb-4 flex-shrink-0">
-            <h2 class="text-lg font-semibold text-gray-800">Items to Buy <span id="buylist-count" class="text-sm font-normal text-gray-500">(0 items)</span></h2>
-          </div>
-          <div id="buylist-grid" class="flex-1 overflow-y-auto scrollbar-thin">
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"></div>
-            <div id="empty-buylist" class="text-center py-16 text-gray-400 hidden">Your buy list is empty.</div>
+        <div id="test-stage" class="flex-1 relative rounded-xl overflow-hidden bg-gray-100">
+          <canvas id="test-base-canvas" class="absolute inset-0 w-full h-full"></canvas>
+          <canvas id="test-paint-canvas" class="absolute inset-0 w-full h-full"></canvas>
+          <div id="test-cursor" class="paint-cursor"></div>
+          <div id="test-empty" class="absolute inset-0 flex items-center justify-center text-gray-400">
+            <div class="text-center">
+              <p class="font-medium">Upload an image to start painting</p>
+              <p class="text-sm mt-1">Paints on a transparent overlay (non-destructive)</p>
+            </div>
           </div>
         </div>
       </div>
-    </main>
-  </div>
-  <!-- Modal -->
-  <div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-    <div class="absolute inset-0 modal-backdrop backdrop-blur-sm" data-action="modal-close"></div>
-    <div class="relative bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 glass-card">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="font-semibold text-gray-800" id="modal-title">Modal</h3>
-        <button class="text-gray-500 hover:text-gray-700 font-medium" data-action="modal-close"> </button>
+      <div class="w-96 glass-card rounded-2xl p-6 flex flex-col overflow-hidden">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"><div class="w-1.5 h-1.5
+        bg-purple-600 rounded-full"></div>Tips</h2>
+        <div class="flex-1 overflow-y-auto scrollbar-thin space-y-3 text-sm text-gray-600">
+          <div class="bg-gray-50 rounded-xl p-4"><p class="font-medium text-gray-800 mb-1">How it
+          works</p><p>Paints onto a separate overlay canvas, so you can test colors without changing the
+          original image.</p></div>
+        </div>
       </div>
-      <div id="modal-body"></div>
-      <div id="modal-footer" class="mt-5 flex justify-end gap-2"></div>
+    </div>
+  </main>
+</div>
+<!-- Advanced Modal -->
+<div id="advanced-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-action="close-advanced"></div>
+  <div class="relative bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 glass-card">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-semibold text-gray-800">Advanced Settings</h3>
+      <button class="text-gray-500 hover:text-gray-700 font-medium" data-action="close-advanced">✕</button>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">Recipe
+        Intensity</label>
+        <input id="recipe-intensity" type="range" min="8" max="30" value="18" class="w-full" />
+        <p class="text-xs text-gray-500 mt-1">Controls how dark the shade + how bright the highlight targets
+        are.</p>
+      </div>
+      <div>
+        <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">Prefer owned
+        substitutions</label>
+        <label class="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 rounded-lg px-3 py-2">
+          <input type="checkbox" id="prefer-owned" class="accent-indigo-600" checked />
+          Swap recipe items to paints you already own when they are close
+        </label>
+      </div>
+      <div>
+        <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">Cross-brand owned
+        swaps</label>
+        <label class="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 rounded-lg px-3 py-2">
+          <input type="checkbox" id="allow-cross-brand-owned" class="accent-indigo-600" />
+          Allow using owned paints even if brand lock is enabled
+        </label>
+      </div>
+    </div>
+    <div class="mt-5 flex justify-end">
+      <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700
+      transition shadow-lg" data-action="close-advanced">Done</button>
     </div>
   </div>
-  <script>
-  (() => {
-    'use strict';
-    // ====== Paste/expand your full paint lists here if you want (single-file) ======
-    // Format per paint: { name, hex, type }. Type is optional but recommended.
-    const PAINT_DATABASE_RAW = {"citadel": [{"name": "Mephiston Red", "hex": "#9b1f24", "type": "Base"}, {"name": "Evil Sunz Scarlet", "hex": "#c01c20", "type": "Layer"}, {"name": "Wild Rider Red", "hex": "#e14b3a", "type": "Layer"}, {"name": "Agrax Earthshade", "hex": "#5a3b28", "type": "Shade"}, {"name": "Nuln Oil", "hex": "#1b1b1b", "type": "Shade"}, {"name": "Leadbelcher", "hex": "#7a7d80", "type": "Metallic"}, {"name": "Retributor Armour", "hex": "#d1a000", "type": "Metallic"}, {"name": "Ushabti Bone", "hex": "#d6c9a3", "type": "Layer"}, {"name": "Rakarth Flesh", "hex": "#a8937a", "type": "Base"}, {"name": "Abaddon Black", "hex": "#000000", "type": "Base"}, {"name": "Corax White", "hex": "#f2f2f2", "type": "Base"}], "vallejo": [{"name": "Model Color Black", "hex": "#0a0a0a", "type": "Base"}, {"name": "Model Color White", "hex": "#f6f6f6", "type": "Base"}, {"name": "Model Color Red", "hex": "#b01e25", "type": "Layer"}, {"name": "Game Color Silver", "hex": "#b7b9bb", "type": "Metallic"}, {"name": "Game Color Sepia Wash", "hex": "#6b4a2f", "type": "Shade"}], "army_painter": [{"name": "Matt Black", "hex": "#111111", "type": "Base"}, {"name": "Matt White", "hex": "#f4f4f4", "type": "Base"}, {"name": "Pure Red", "hex": "#c81f2a", "type": "Layer"}, {"name": "Dark Tone", "hex": "#2b2b2b", "type": "Shade"}, {"name": "Bright Gold", "hex": "#caa23a", "type": "Metallic"}], "pro_acryl": [{"name": "Coal Black", "hex": "#1a1d22", "type": "Base"}, {"name": "Bold Titanium White", "hex": "#f7f7f7", "type": "Base"}, {"name": "Bold Pyrrole Red", "hex": "#c5162b", "type": "Layer"}, {"name": "Dark Wash", "hex": "#2b2b2b", "type": "Shade"}, {"name": "Bright Gold", "hex": "#caa23a", "type": "Metallic"}]};
-    const PaintType = Object.freeze({
-      Base:'Base', Layer:'Layer', Shade:'Shade', Metallic:'Metallic', Primer:'Primer', Technical:'Technical', Contrast:'Contrast', Other:'Other'
-    });
-    const BRAND_NAMES = {
-      citadel: 'Citadel',
-      vallejo: 'Vallejo',
-      army_painter: 'Army Painter',
-      pro_acryl: 'Pro Acryl'
+</div>
+<script>
+/* Fixed single-file build: upload works again (DOMContentLoaded init), drag/drop, add-all-to-buylist, badge
+color changes, etc. */
+const PAINT_DATABASE={
+  citadel:[{name:"Abaddon Black",hex:"#231f20",type:"Base"},{name:"Mephiston
+  Red",hex:"#9a1115",type:"Base"},{name:"Evil Sunz Scarlet",hex:"#c11519",type:"Layer"},{name:"Agrax
+  Earthshade",hex:"#5a4522",type:"Shade"},{name:"Nuln
+  Oil",hex:"#14100e",type:"Shade"},{name:"Leadbelcher",hex:"#888d8f",type:"Metallic"}],
+  vallejo:[{name:"Black",hex:"#0c0c0c",type:"Base"},{name:"Bloody Red",hex:"#840404",type:"Base"},{name:"Dead
+  White",hex:"#ffffff",type:"Layer"},{name:"Neutral
+  Grey",hex:"#848484",type:"Layer"},{name:"Gunmetal",hex:"#555959",type:"Metallic"}],
+  army_painter:[{name:"Matt Black",hex:"#0f0f0f",type:"Base"},{name:"Pure
+  Red",hex:"#ba1a1e",type:"Base"},{name:"Shining Silver",hex:"#b8bab9",type:"Metallic"},{name:"Weapon
+  Bronze",hex:"#735d3a",type:"Metallic"}],
+  pro_acryl:[{name:"Coal Black",hex:"#1a1918",type:"Base"},{name:"Bright
+  Red",hex:"#d02020",type:"Layer"},{name:"Bold Titanium White",hex:"#ffffff",type:"Layer"},{name:"Dark Neutral
+  Grey",hex:"#4a4845",type:"Layer"}]
+};
+const STORAGE_KEY="mini_paint_assistant_v2";
+const defaultState={inventory:[],buylist:[],projects:[],settings:{brandLock:"",recipeIntensity:18,preferOwned:
+true,allowCrossBrandOwned:false,cartSkipOwned:false}};
+const $=id=>document.getElementById(id);
+const uid=()=>("id_"+Math.random().toString(16).slice(2)+Date.now().toString(16));
+const brandName=b=>({citadel:"Citadel",vallejo:"Vallejo",army_painter:"Army Painter",pro_acryl:"Pro
+Acryl"}[b]||b);
+function loadState(){try{const raw=localStorage.getItem(STORAGE_KEY);return
+raw?Object.assign({},defaultState,JSON.parse(raw)):structuredClone(defaultState);}catch{return
+structuredClone(defaultState)}}
+function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
+let state=loadState();
+function showToast(message,type="info"){
+  const old=document.querySelector(".toast-notification"); if(old) old.remove();
+  const t=document.createElement("div");
+  t.className="toast-notification fixed bottom-6 right-6 px-6 py-3 rounded-xl shadow-2xl text-white
+  font-medium z-50 transform transition-all duration-300 translate-y-20 opacity-0";
+  t.classList.add({success:"bg-green-500",error:"bg-red-500",info:"bg-indigo-500"}[type]||"bg-indigo-500");
+  t.textContent=message; document.body.appendChild(t);
+  setTimeout(()=>t.classList.remove("translate-y-20","opacity-0"),50);
+  setTimeout(()=>{t.classList.add("translate-y-20","opacity-0"); setTimeout(()=>t.remove(),300)},2500);
+}
+function hexToRgb(hex){const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);return
+m?{r:parseInt(m[1],16),g:parseInt(m[2],16),b:parseInt(m[3],16)}:{r:0,g:0,b:0}}
+function rgbToHex(r,g,b){return "#"+[r,g,b].map(x=>x.toString(16).padStart(2,"0")).join("")}
+function dist(a,b){return Math.sqrt((a.r-b.r)**2+(a.g-b.g)**2+(a.b-b.b)**2)}
+function normScore(d){return Math.round((1-d/441.67)*100)}
+function hexToHsl(hex){const {r,g,b}=hexToRgb(hex);const R=r/255,G=g/255,B=b/255;const
+max=Math.max(R,G,B),min=Math.min(R,G,B);let h=0,s=0,l=(max+min)/2;if(max!==min){const
+d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);switch(max){case R:h=(G-B)/d+(G<B?6:0);break;case
+G:h=(B-R)/d+2;break;case B:h=(R-G)/d+4;break}h/=6}return{h:h*360,s:s*100,l:l*100}}
+function hslToHex(h,s,l){h/=360;s/=100;l/=100;const hue2rgb=(p,q,t)=>{if(t<0)t+=1;if(t>1)t-=1;if(t<1/6)return
+p+(q-p)*6*t;if(t<1/2)return q;if(t<2/3)return p+(q-p)*(2/3-t)*6;return p};let
+r,g,b;if(s===0){r=g=b=l}else{const q=l<0.5?l*(1+s):l+s-l*s;const
+p=2*l-q;r=hue2rgb(p,q,h+1/3);g=hue2rgb(p,q,h);b=hue2rgb(p,q,h-1/3)}return
+rgbToHex(Math.round(r*255),Math.round(g*255),Math.round(b*255))}
+function tweakLightness(hex,deltaL){const hsl=hexToHsl(hex);const
+nl=Math.max(0,Math.min(100,hsl.l+deltaL));return hslToHex(hsl.h,hsl.s,nl)}
+function escapeHtml(s){return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").
+replaceAll('"',"&quot;").replaceAll("'","&#039;")}
+function brandLock(){return state.settings.brandLock||""}
+function allPaintsForBrand(brand){return (PAINT_DATABASE[brand]||[]).map(p=>({...p,brand}))}
+function allPaintsMulti(){const out=[]; for(const b of Object.keys(PAINT_DATABASE))
+out.push(...allPaintsForBrand(b)); return out}
+function findClosest(targetHex,limit=5){
+  const target=hexToRgb(targetHex);
+  const paints=brandLock()?allPaintsForBrand(brandLock()):allPaintsMulti();
+  const scored=paints.map(p=>({...p,score:normScore(dist(target,hexToRgb(p.hex)))}));
+  scored.sort((a,b)=>b.score-a.score);
+  return scored.slice(0,limit);
+}
+function ownedIndex(){const m=new Map(); for(const p of
+state.inventory){if(p.owned)m.set(`${p.brand}||${p.paint_name}`.toLowerCase(),p)} return m}
+function bestOwnedForHex(targetHex,allowCrossBrand=false){
+  const target=hexToRgb(targetHex); let best=null,bestScore=-1;
+  for(const p of state.inventory){
+    if(!p.owned) continue;
+    if(!allowCrossBrand && brandLock() && p.brand!==brandLock()) continue;
+    const score=normScore(dist(target,hexToRgb(p.hex)));
+    if(score>bestScore){bestScore=score;best=p}
+  }
+  return
+  best?{brand:best.brand,name:best.paint_name,hex:best.hex,type:best.type,score:bestScore,__inv:best}:null;
+}
+const ROLE_TYPES={base:["Base","Layer","Contrast","Other"],shade:["Shade","Technical","Contrast","Other"],high
+light:["Layer","Base","Other"]};
+function closestByRole(targetHex,role,brand){
+  const target=hexToRgb(targetHex);
+  const paints=allPaintsForBrand(brand).filter(p=>ROLE_TYPES[role].includes(p.type||"Other"));
+  const
+  scored=paints.map(p=>({...p,score:normScore(dist(target,hexToRgb(p.hex)))})).sort((a,b)=>b.score-a.score);
+  return scored[0]||null;
+}
+function recipeFor(targetHex,brand){
+  const intensity=Number(state.settings.recipeIntensity||18);
+  const base=closestByRole(targetHex,"base",brand);
+  const shade=closestByRole(tweakLightness(targetHex,-intensity),"shade",brand);
+  const highlight=closestByRole(tweakLightness(targetHex,+intensity),"highlight",brand);
+  return {base,shade,highlight,brand};
+}
+function maybeSwapToOwned(pick,targetHex){
+  if(!pick) return null;
+  if(!state.settings.preferOwned) return pick;
+  const owned=bestOwnedForHex(targetHex,!!state.settings.allowCrossBrandOwned);
+  if(owned && owned.score>=Math.max(85,(pick.score||0)-3)) return
+  {brand:owned.brand,name:owned.name,hex:owned.hex,type:owned.type,score:owned.score,__owned:true};
+  return pick;
+}
+function cartKey(item){return `${item.brand}||${item.paint_name}`.toLowerCase()}
+function addToCart({brand,paint_name,hex,type="Other",quantity=1,reason="",role=""}){
+  if(state.settings.cartSkipOwned){
+    const idx=ownedIndex();
+    if(idx.has(`${brand}||${paint_name}`.toLowerCase())) return false;
+  }
+  const existing=state.buylist.find(i=>cartKey(i)===`${brand}||${paint_name}`.toLowerCase());
+  if(existing){
+    existing.quantity=(existing.quantity||1)+quantity;
+    if(role && !(existing.role||"").includes(role)) existing.role=existing.role?`${existing.role},
+    ${role}`:role;
+    if(reason && !(existing.reason||"").includes(reason)) existing.reason=existing.reason?`${existing.reason};
+    ${reason}`:reason;
+  } else {
+    state.buylist.push({id:uid(),brand,paint_name,hex,type,quantity,reason,role});
+  }
+  saveState(); renderBuylist(); return true;
+}
+function moveCartItemToInventory(itemId){
+  const idx=state.buylist.findIndex(i=>i.id===itemId); if(idx===-1) return;
+  const item=state.buylist[idx]; state.buylist.splice(idx,1);
+  const existing=state.inventory.find(p=>`${p.brand}||${p.paint_name}`.toLowerCase()===`${item.brand}||${item.
+  paint_name}`.toLowerCase());
+  if(existing){existing.owned=true; existing.quantity=(existing.quantity||1)+1}
+  else state.inventory.push({id:uid(),brand:item.brand,paint_name:item.paint_name,hex:item.hex,type:item.type|
+  |"Other",owned:true,quantity:1});
+  saveState(); renderBuylist(); renderInventory(); refreshTestPicker(); renderMatches();
+}
+let uploadedImage=null;
+let markers=[];
+let markerCounter=0;
+function resetMatcher(){
+  uploadedImage=null; markers=[]; markerCounter=0;
+  $("markers-container").innerHTML="";
+  $("upload-zone").classList.remove("hidden");
+  $("image-container").classList.add("hidden");
+  $("add-all-to-buylist-btn").disabled=true;
+  $("export-plan-btn").disabled=true;
+  renderMatches();
+}
+function handleImageFile(file){
+  if(!file||!file.type||!file.type.startsWith("image/")) return;
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    uploadedImage=new Image();
+    uploadedImage.onload=()=>{
+      $("upload-zone").classList.add("hidden");
+      $("image-container").classList.remove("hidden");
+      markers=[]; markerCounter=0; $("markers-container").innerHTML="";
+      drawMatcherImage();
+      $("add-all-to-buylist-btn").disabled=false;
+      $("export-plan-btn").disabled=false;
+      showToast("Image loaded","success");
+      renderMatches();
     };
-    function formatBrand(b) { return BRAND_NAMES[b] || b; }
-    // Normalize DB entries
-    const PAINT_DB = (() => {
-      const out = {};
-      for (const [brand, paints] of Object.entries(PAINT_DATABASE_RAW)) {
-        out[brand] = (paints || []).map(p => ({ brand, paint_name: p.name, hex: p.hex, type: p.type || PaintType.Layer, sku: p.sku || null }));
-      }
-      return out;
-    })();
-    // Storage
-    const STORAGE_KEY = 'mpa_v2_singlefile';
-    const nowIso = () => new Date().toISOString();
-    const uid = () => 'id_' + Math.random().toString(16).slice(2) + Date.now().toString(16);
-    const state = (() => {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return null;
-      try { return JSON.parse(raw); } catch { return null; }
-    })() || {
-      version: 2,
-      ui: { currentView:'matcher', invBrand:'all', invOwnedOnly:false, invSearch:'', recipeExpandedByMarkerId: {} },
-      settings: {
-        conversionBrand: null,
-        recipe: { enableOwnedSwap:true, allowCrossBrandOwnedSwap:true, strictTypes:true, recipeDeltaL:18 },
-        cart: { avoidOwnedPurchases:true, qtyPerUsage:true }
-      },
-      data: { inventory:[], buylist:[], projects:[], activeProjectId:null },
-      matcher: { uploadedImageDataUrl:null, markers:[], markerCounter:0 }
-    };
-    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-    // DOM
-    const $ = (s, r=document) => r.querySelector(s);
-    const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
-    function clamp(n,a,b) { return Math.max(a, Math.min(b, n)); }
-    function escapeHtml(s) { return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-    function decodePayload(node) {
-      const raw = node?.dataset?.payload;
-      if (!raw) return null;
-      try { return JSON.parse(decodeURIComponent(raw)); } catch { return null; }
-    }
-    // Toast
-    function showToast(msg, type='info') {
-      const old = document.querySelector('.toast-notification');
-      if (old) old.remove();
-      const t = document.createElement('div');
-      t.className = 'toast-notification fixed bottom-6 right-6 px-6 py-3 rounded-xl shadow-2xl text-white font-medium z-50 transform transition-all duration-300 translate-y-20 opacity-0';
-      t.classList.add(type==='success'?'bg-green-500':type==='error'?'bg-red-500':'bg-indigo-500');
-      t.textContent = msg;
-      document.body.appendChild(t);
-      setTimeout(() => t.classList.remove('translate-y-20','opacity-0'), 50);
-      setTimeout(() => { t.classList.add('translate-y-20','opacity-0'); setTimeout(() => t.remove(), 300); }, 3000);
-    }
-    // Modal
-    function openModal(title, bodyHtml, footerButtons=[]) {
-      $('#modal-title').textContent = title;
-      $('#modal-body').innerHTML = bodyHtml || '';
-      const f = $('#modal-footer'); f.innerHTML = '';
-      for (const b of footerButtons) {
-        const btn = document.createElement('button');
-        btn.className = b.className || 'px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50';
-        btn.textContent = b.label;
-        if (b.action) btn.dataset.action = b.action;
-        if (b.payload) btn.dataset.payload = JSON.stringify(b.payload);
-        f.appendChild(btn);
-      }
-      $('#modal').classList.remove('hidden'); $('#modal').classList.add('flex');
-    }
-    function closeModal() { $('#modal').classList.add('hidden'); $('#modal').classList.remove('flex'); }
-    // Color math
-    function hexToRgb(hex) {
-      const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex||'');
-      return m ? {r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16)} : {r:0,g:0,b:0};
-    }
-    function rgbToHex(r,g,b) { return '#' + [r,g,b].map(x=>x.toString(16).padStart(2,'0')).join(''); }
-    function colorDistance(a,b) { return Math.sqrt((a.r-b.r)**2+(a.g-b.g)**2+(a.b-b.b)**2); }
-    function pctFromDistance(d) { return Math.round((1 - d / 441.67) * 100); }
-    function hexToHsl(hex) {
-      const {r,g,b} = hexToRgb(hex);
-      const R=r/255,G=g/255,B=b/255;
-      const max=Math.max(R,G,B), min=Math.min(R,G,B);
-      let h=0,s=0,l=(max+min)/2;
-      if (max!==min) {
-        const d=max-min;
-        s=l>0.5? d/(2-max-min) : d/(max+min);
-        switch(max) {
-          case R: h=(G-B)/d + (G<B?6:0); break;
-          case G: h=(B-R)/d + 2; break;
-          case B: h=(R-G)/d + 4; break;
-        }
-        h/=6;
-      }
-      return {h:h*360,s:s*100,l:l*100};
-    }
-    function hslToHex(h,s,l) {
-      h/=360; s/=100; l/=100;
-      const hue2rgb=(p,q,t)=>{ if(t<0)t+=1; if(t>1)t-=1;
-        if(t<1/6)return p+(q-p)*6*t; if(t<1/2)return q; if(t<2/3)return p+(q-p)*(2/3-t)*6; return p; };
-      let r,g,b;
-      if (s===0) r=g=b=l;
-      else {
-        const q=l<0.5? l*(1+s) : l+s-l*s;
-        const p=2*l-q;
-        r=hue2rgb(p,q,h+1/3); g=hue2rgb(p,q,h); b=hue2rgb(p,q,h-1/3);
-      }
-      return rgbToHex(Math.round(r*255),Math.round(g*255),Math.round(b*255));
-    }
-    function tweakLightness(hex, dL) {
-      const hsl=hexToHsl(hex);
-      return hslToHex(hsl.h, hsl.s, clamp(hsl.l + dL, 0, 100));
-    }
-    // Owned index
-    const paintKey = (brand, name) => `${brand}||${String(name||'').toLowerCase()}`;
-    const ownedIndex = () => {
-      const m=new Map();
-      for (const p of state.data.inventory) if (p.owned && (p.quantity||0)>0) m.set(paintKey(p.brand,p.paint_name), p);
-      return m;
-    };
-    const isOwned = (brand,name) => ownedIndex().has(paintKey(brand,name));
-    // Matching
-    function candidatesForBrand(brand, allow=null) {
-      const list = PAINT_DB[brand] || [];
-      if (!allow) return list;
-      return list.filter(p => allow.has(p.type));
-    }
-    function findClosest(targetHex, brandOrNull, limit=5, allow=null) {
-      const t = hexToRgb(targetHex);
-      const results=[];
-      const brands = brandOrNull ? [brandOrNull] : Object.keys(PAINT_DB);
-      for (const b of brands) for (const p of candidatesForBrand(b, allow)) {
-        const d=pctFromDistance(colorDistance(t, hexToRgb(p.hex)));
-        results.push({ brand:b, paint_name:p.paint_name, hex:p.hex, type:p.type, sku:p.sku||null, distance:d });
-      }
-      results.sort((a,b)=>b.distance-a.distance);
-      return results.slice(0,limit);
-    }
-    // Recipe generator (Base/Shade/Highlight), type-aware + owned swap
-    const ROLE={ Base:'Base', Shade:'Shade', Highlight:'Highlight' };
-    function roleAllow(role) {
-      if (!state.settings.recipe.strictTypes) return null;
-      if (role===ROLE.Shade) return new Set([PaintType.Shade, PaintType.Contrast, PaintType.Technical, PaintType.Layer, PaintType.Base]);
-      if (role===ROLE.Highlight) return new Set([PaintType.Layer, PaintType.Base, PaintType.Other]);
-      return new Set([PaintType.Base, PaintType.Layer, PaintType.Other]);
-    }
-    function pickOwnedSub(targetHex, role, recipeBrand) {
-      if (!state.settings.recipe.enableOwnedSwap) return null;
-      const owned = state.data.inventory.filter(p=>p.owned && (p.quantity||0)>0);
-      if (!owned.length) return null;
-      const allowCross = !!state.settings.recipe.allowCrossBrandOwnedSwap;
-      const allow = roleAllow(role);
-      const t = hexToRgb(targetHex);
-      let best=null, bestScore=-1;
-      for (const p of owned) {
-        if (!allowCross && p.brand!==recipeBrand) continue;
-        if (allow && !allow.has(p.type)) continue;
-        const score=pctFromDistance(colorDistance(t, hexToRgb(p.hex)));
-        if (score>bestScore) { bestScore=score; best=p; }
-      }
-      if (!best) return null;
-      return { brand:best.brand, paint_name:best.paint_name, hex:best.hex, type:best.type, sku:best.sku||null, distance:bestScore };
-    }
-    function recipeFor(hex, recipeBrand) {
-      const dL = clamp(parseInt(state.settings.recipe.recipeDeltaL,10)||18, 6, 35);
-      const baseTarget=hex;
-      const shadeTarget=tweakLightness(hex, -dL);
-      const hiTarget=tweakLightness(hex, +dL);
-      const basePick=findClosest(baseTarget, recipeBrand, 6, roleAllow(ROLE.Base))[0] || null;
-      const shadeList=findClosest(shadeTarget, recipeBrand, 6, roleAllow(ROLE.Shade));
-      const shadePick=(shadeList.slice().sort((a,b)=>((b.type===PaintType.Shade)-(a.type===PaintType.Shade)) || (b.distance-a.distance))[0]) || null;
-      const hiPick=findClosest(hiTarget, recipeBrand, 6, roleAllow(ROLE.Highlight))[0] || null;
-      const useOwnedIfGood=(owned,pick)=>{
-        if(!owned) return {pick, usedOwned:false};
-        if(!pick) return {pick:owned, usedOwned:true};
-        if(owned.distance >= pick.distance - 4) return {pick:owned, usedOwned:true};
-        return {pick, usedOwned:false, altOwned:owned};
-      };
-      return {
-        brand: recipeBrand,
-        base: useOwnedIfGood(pickOwnedSub(baseTarget, ROLE.Base, recipeBrand), basePick),
-        shade: useOwnedIfGood(pickOwnedSub(shadeTarget, ROLE.Shade, recipeBrand), shadePick),
-        highlight: useOwnedIfGood(pickOwnedSub(hiTarget, ROLE.Highlight, recipeBrand), hiPick),
-      };
-    }
-    // Buy list (dedupe + qty + avoid owned)
-    function addToBuySmart(item, meta={}) {
-      if (!item?.brand || !item?.paint_name) return {ok:false};
-      if (state.settings.cart.avoidOwnedPurchases && isOwned(item.brand, item.paint_name)) return {ok:false, skipped:'owned'};
-      const key = paintKey(item.brand, item.paint_name);
-      const existing = state.data.buylist.find(x => paintKey(x.brand,x.paint_name)===key);
-      const addQty = clamp(parseInt(meta.qtyAdd ?? 1,10)||1, 1, 99);
-      if (existing) {
-        existing.quantity = clamp((existing.quantity||1) + addQty, 1, 99);
-        existing.updated_at = nowIso();
-        existing.roles = Array.from(new Set([...(existing.roles||[]), ...(meta.role?[meta.role]:[])]));
-        existing.reasons = [...(existing.reasons||[]), ...(meta.reason?[meta.reason]:[])];
-        saveState();
-        return {ok:true, updated:true};
-      }
-      state.data.buylist.push({
-        id: uid(), kind:'buy', brand:item.brand, paint_name:item.paint_name, hex:item.hex, type:item.type||PaintType.Other, owned:false,
-        quantity:addQty, sku:item.sku||null, roles: meta.role?[meta.role]:[], reasons: meta.reason?[meta.reason]:[],
-        created_at: nowIso(), updated_at: nowIso()
-      });
-      saveState();
-      return {ok:true, created:true};
-    }
-    function addRecipeToBuy(markerId, markerHex) {
-      const recipeBrand = state.settings.conversionBrand || fallbackRecipeBrand(markerHex);
-      const rec = recipeFor(markerHex, recipeBrand);
-      const idx = state.matcher.markers.findIndex(m => m.id===markerId) + 1;
-      const pack = [
-        {role:ROLE.Base, p:rec.base.pick},
-        {role:ROLE.Shade, p:rec.shade.pick},
-        {role:ROLE.Highlight, p:rec.highlight.pick},
-      ].filter(x => x.p);
-      let added=0;
-      for (const it of pack) {
-        const r = addToBuySmart({brand:it.p.brand, paint_name:it.p.paint_name, hex:it.p.hex, type:it.p.type, sku:it.p.sku||null}, {
-          reason:`Recipe for Point ${idx}`, role:it.role, qtyAdd: state.settings.cart.qtyPerUsage ? 1 : 1
-        });
-        if (r.ok) added++;
-      }
-      return added;
-    }
-    // Projects
-    const activeProject = () => state.data.projects.find(p => p.id===state.data.activeProjectId) || null;
-    function renderHeaderProject() {
-      const p = activeProject();
-      $('#active-project-label').textContent = p ? `Project: ${p.name}` : 'No project';
-    }
-    function createProject(name) {
-      const p={ id:uid(), kind:'project', name, created_at:nowIso(), updated_at:nowIso(), model_image_data_url:null, markers:[], settings_snapshot:null };
-      state.data.projects.unshift(p);
-      state.data.activeProjectId = p.id;
-      saveState();
-      renderHeaderProject();
-    }
-    function saveSnapshot() {
-      const p = activeProject();
-      if (!p) return showToast('Create/select a project first', 'error');
-      p.updated_at = nowIso();
-      p.model_image_data_url = state.matcher.uploadedImageDataUrl;
-      p.markers = JSON.parse(JSON.stringify(state.matcher.markers || []));
-      p.settings_snapshot = JSON.parse(JSON.stringify(state.settings));
-      saveState();
-      showToast('Project snapshot saved', 'success');
-    }
-    function loadProject(id) {
-      const p = state.data.projects.find(x => x.id===id);
-      if (!p) return;
-      state.data.activeProjectId = p.id;
-      if (p.settings_snapshot) state.settings = JSON.parse(JSON.stringify(p.settings_snapshot));
-      if (p.model_image_data_url) {
-        state.matcher.uploadedImageDataUrl = p.model_image_data_url;
-        loadMatcherImageFromDataUrl(p.model_image_data_url, () => {
-          state.matcher.markers = JSON.parse(JSON.stringify(p.markers || []));
-          state.matcher.markerCounter = (state.matcher.markers.reduce((mx,m)=>Math.max(mx,m.id),0))||0;
-          renderMarkers(); updateColorMatches();
-        });
-      } else {
-        state.matcher.markers = JSON.parse(JSON.stringify(p.markers || []));
-        state.matcher.markerCounter = (state.matcher.markers.reduce((mx,m)=>Math.max(mx,m.id),0))||0;
-        renderMarkers(); updateColorMatches();
-      }
-      saveState();
-      renderHeaderProject();
-      showToast('Project loaded', 'success');
-    }
-    function openProjectsModal() {
-      const list = state.data.projects.slice();
-      const body = `
-        <div class="space-y-4">
-          <div class="p-3 rounded-xl bg-gray-50 border border-gray-200">
-            <div class="font-semibold text-gray-900">Create new project</div>
-            <div class="mt-2 flex gap-2">
-              <input id="proj-new-name" type="text" placeholder="e.g., Blood Angels Intercessor"
-                     class="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-              <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700"
-                      data-action="proj-create">Create</button>
-            </div>
+    uploadedImage.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+  $("image-upload").value="";
+}
+function drawMatcherImage(){
+  if(!uploadedImage) return;
+  const canvas=$("image-canvas"); const ctx=canvas.getContext("2d"); const container=canvas.parentElement;
+  const w=Math.max(1,container.clientWidth), h=Math.max(1,container.clientHeight);
+  canvas.width=w; canvas.height=h;
+  ctx.fillStyle="#1f2937"; ctx.fillRect(0,0,w,h);
+  const scale=Math.min(w/uploadedImage.width,h/uploadedImage.height);
+  const x=(w-uploadedImage.width*scale)/2, y=(h-uploadedImage.height*scale)/2;
+  ctx.drawImage(uploadedImage,x,y,uploadedImage.width*scale,uploadedImage.height*scale);
+}
+function addMarker(){
+  if(!uploadedImage){showToast("Upload an image first","error");return}
+  const id=++markerCounter;
+  const el=document.createElement("div");
+  el.className="color-marker absolute w-8 h-8 rounded-full border-4 border-white shadow-lg";
+  el.dataset.markerId=String(id);
+  el.style.left="50%"; el.style.top="50%"; el.style.transform="translate(-50%,-50%)";
+  el.style.backgroundColor="#888";
+  el.innerHTML=`<span class="absolute -top-6 left-1/2 -translate-x-1/2 bg-white text-gray-800 text-xs
+  font-bold px-2 py-0.5 rounded-full shadow">${markers.length+1}</span>
+  <button class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs hover:bg-red-600
+  flex items-center justify-center" data-action="delete-marker">×</button>`;
+  $("markers-container").appendChild(el);
+  markers.push({id,xPct:50,yPct:50,hex:"#888",recipeOpen:false});
+  makeDraggable(el);
+  setTimeout(()=>sampleMarker(el),30);
+}
+function makeDraggable(el){
+  let dragging=false,startX=0,startY=0,startLeft=0,startTop=0;
+  el.addEventListener("mousedown",(e)=>{
+    if(e.target.closest('[data-action="delete-marker"]')) return;
+    dragging=true; startX=e.clientX; startY=e.clientY; startLeft=el.offsetLeft; startTop=el.offsetTop;
+    el.style.cursor="grabbing"; el.style.zIndex="100";
+  });
+  document.addEventListener("mousemove",(e)=>{
+    if(!dragging) return;
+    const rect=$("markers-container").getBoundingClientRect();
+    let nl=startLeft+(e.clientX-startX), nt=startTop+(e.clientY-startY);
+    nl=Math.max(0,Math.min(rect.width-32,nl)); nt=Math.max(0,Math.min(rect.height-32,nt));
+    el.style.left=nl+"px"; el.style.top=nt+"px"; el.style.transform="none";
+}
+    sampleMarker(el);
+  });
+  document.addEventListener("mouseup",()=>{if(!dragging)return; dragging=false; el.style.cursor="grab";
+  el.style.zIndex=""; renderMatches();});
+function sampleMarker(el){
+  const canvas=$("image-canvas"); const ctx=canvas.getContext("2d");
+  const rect=$("markers-container").getBoundingClientRect();
+  const x=el.offsetLeft+16, y=el.offsetTop+16;
+  try{
+    const px=ctx.getImageData(x,y,1,1).data;
+    const hex=rgbToHex(px[0],px[1],px[2]);
+    el.style.backgroundColor=hex;
+    const id=Number(el.dataset.markerId);
+    const m=markers.find(mm=>mm.id===id);
+    if(m){m.hex=hex; m.xPct=(x/rect.width)*100; m.yPct=(y/rect.height)*100;}
+  }catch{}
+}
+function deleteMarker(id){
+  markers=markers.filter(m=>m.id!==id);
+  const el=document.querySelector(`[data-marker-id="${id}"]`); if(el) el.remove();
+  Array.from(document.querySelectorAll(".color-marker")).forEach((m,i)=>{const s=m.querySelector("span");
+  if(s) s.textContent=String(i+1)});
+  renderMatches();
+}
+function badge(score){if(score>=95)return{label:"Exact",cls:"bg-green-100
+text-green-700"};if(score>=88)return{label:"Close",cls:"bg-indigo-100
+text-indigo-700"};return{label:"Alt",cls:"bg-gray-100 text-gray-600"}}
+function renderMatches(){
+  const box=$("color-matches");
+  if(!markers.length){
+    box.innerHTML=`<div class="text-center py-12 text-gray-400"><p class="font-medium">No colors
+    selected</p><p class="text-sm mt-1">Upload an image and add color points</p></div>`;
+    return;
+  }
+  const owned=ownedIndex();
+  const lock=brandLock();
+  box.innerHTML=markers.map((m,idx)=>{
+    const matches=findClosest(m.hex,5);
+    const recipeBrand=lock || (matches[0]?.brand||"citadel");
+    const r=recipeFor(m.hex,recipeBrand);
+    const base=maybeSwapToOwned(r.base,m.hex);
+    const shade=maybeSwapToOwned(r.shade,tweakLightness(m.hex,-Number(state.settings.recipeIntensity||18)));
+    const hi=maybeSwapToOwned(r.highlight,tweakLightness(m.hex,+Number(state.settings.recipeIntensity||18)));
+    const ownedAlt=bestOwnedForHex(m.hex,true);
+    const recipeOpen=!!m.recipeOpen;
+    const row=(p,label,role)=>{
+      if(!p) return `<div class="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100"><div
+      class="w-6 h-6 rounded-md bg-gray-100"></div><div class="flex-1 min-w-0"><p class="text-sm font-medium
+      text-gray-800">${label}</p><p class="text-xs text-gray-500">No suggestion</p></div></div>`;
+      const key=`${p.brand}||${p.name}`.toLowerCase();
+      const isOwned=owned.has(key)||p.__owned;
+      return `<div class="flex items-center gap-2 p-2 bg-white rounded-lg hover:shadow-md transition
+      cursor-pointer" data-action="add-dialog" data-brand="${p.brand}" data-name="${escapeHtml(p.name)}"
+      data-hex="${p.hex}" data-type="${p.type||'Other'}" data-role="${role}">
+        <div class="w-6 h-6 rounded-md shadow-sm" style="background-color:${p.hex}"></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <p class="text-sm font-medium text-gray-800">${label}: <span
+            class="font-semibold">${escapeHtml(p.name)}</span></p>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600
+            font-semibold">${escapeHtml(p.type||'Other')}</span>
+            ${isOwned?`<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700
+            font-semibold">Owned</span>`:""}
           </div>
-          <div class="p-3 rounded-xl bg-gray-50 border border-gray-200">
-            <div class="flex items-center justify-between">
-              <div class="font-semibold text-gray-900">Your projects</div>
-              <div class="text-xs text-gray-500">${list.length} saved</div>
-            </div>
-            <div class="mt-3 space-y-2 max-h-64 overflow-auto scrollbar-thin">
-              ${
-                list.length ? list.map(p => `
-                  <div class="p-3 rounded-xl bg-white border border-gray-200 flex items-center justify-between gap-2">
-                    <div>
-                      <div class="font-semibold text-gray-800">${escapeHtml(p.name)}</div>
-                      <div class="text-xs text-gray-500">${new Date(p.updated_at||p.created_at).toLocaleString()}</div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <button class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:opacity-90"
-                              data-action="proj-load" data-payload="${encodeURIComponent(JSON.stringify({id:p.id}))}">Load</button>
-                      <button class="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200"
-                              data-action="proj-delete" data-payload="${encodeURIComponent(JSON.stringify({id:p.id}))}">Delete</button>
-                    </div>
-                  </div>
-                `).join('') : `<div class="text-sm text-gray-500">No projects yet.</div>`
-              }
-            </div>
-          </div>
+          <p class="text-xs text-gray-500">${brandName(p.brand)} • ${p.hex}</p>
         </div>
-      `;
-      openModal('Project Profiles', body, [{label:'Close', action:'modal-close'}]);
-    }
-    // Advanced modal: brand lock + recipe + cart + export
-    function openAdvancedModal() {
-      const conv = state.settings.conversionBrand;
-      const body = `
-        <div class="space-y-4">
-          <div class="p-3 rounded-xl bg-gray-50 border border-gray-200">
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="font-semibold text-gray-900">Brand Lock (Conversion Mode)</div>
-                <div class="text-xs text-gray-500">Force matches + recipes to a single brand.</div>
-              </div>
-              <div class="text-xs font-mono px-2 py-1 rounded bg-white border">${conv ? escapeHtml(formatBrand(conv)) : 'OFF'}</div>
-            </div>
-            <div class="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2">
-              <button class="px-3 py-2 rounded-lg border ${!conv ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}"
-                      data-action="set-conversion" data-payload="${encodeURIComponent(JSON.stringify({brand:null}))}">Off</button>
-              ${
-                Object.keys(BRAND_NAMES).map(b => `
-                  <button class="px-3 py-2 rounded-lg border ${conv===b ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}"
-                          data-action="set-conversion" data-payload="${encodeURIComponent(JSON.stringify({brand:b}))}">${escapeHtml(formatBrand(b))}</button>
-                `).join('')
-              }
-            </div>
+        <span class="text-xs text-indigo-600 font-medium">${p.score??""}%</span>
+      </div>`;
+    };
+    const matchRow=(p)=>{
+      const b=badge(p.score);
+      const key=`${p.brand}||${p.name}`.toLowerCase();
+      const isOwned=owned.has(key);
+      return `<div class="flex items-center gap-2 p-2 bg-white rounded-lg hover:shadow-md transition
+      cursor-pointer" data-action="add-dialog" data-brand="${p.brand}" data-name="${escapeHtml(p.name)}"
+      data-hex="${p.hex}" data-type="${p.type||'Other'}" data-role="match">
+        <div class="w-6 h-6 rounded-md shadow-sm" style="background-color:${p.hex}"></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <p class="text-sm font-medium text-gray-800 truncate">${escapeHtml(p.name)}</p>
+            <span class="text-[10px] px-2 py-0.5 rounded-full ${b.cls} font-semibold">${b.label}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600
+            font-semibold">${escapeHtml(p.type||'Other')}</span>
+            ${isOwned?`<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700
+            font-semibold">Owned</span>`:""}
           </div>
-          <div class="p-3 rounded-xl bg-gray-50 border border-gray-200">
-            <div class="font-semibold text-gray-900">Recipe Generator</div>
-            <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label class="flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" id="set-owned-swap" ${state.settings.recipe.enableOwnedSwap ? 'checked' : ''} />
-                Swap to paints I already own
-              </label>
-              <label class="flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" id="set-crossbrand-swap" ${state.settings.recipe.allowCrossBrandOwnedSwap ? 'checked' : ''} />
-                Allow cross-brand owned swap
-              </label>
-              <label class="flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" id="set-strict-types" ${state.settings.recipe.strictTypes ? 'checked' : ''} />
-                Type-aware roles (recommended)
-              </label>
-              <label class="text-sm text-gray-700">
-                Highlight/Shade intensity
-                <input type="range" id="set-deltaL" min="6" max="35" value="${clamp(state.settings.recipe.recipeDeltaL,6,35)}" class="w-full" />
-                <div class="text-xs text-gray-500">Current: <span class="font-mono">${clamp(state.settings.recipe.recipeDeltaL,6,35)}</span></div>
-              </label>
-            </div>
-          </div>
-          <div class="p-3 rounded-xl bg-gray-50 border border-gray-200">
-            <div class="font-semibold text-gray-900">Buy List Hygiene</div>
-            <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label class="flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" id="set-avoid-owned" ${state.settings.cart.avoidOwnedPurchases ? 'checked' : ''} />
-                Avoid purchasing owned paints
-              </label>
-              <label class="flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" id="set-qty-usage" ${state.settings.cart.qtyPerUsage ? 'checked' : ''} />
-                Increase qty when used repeatedly
-              </label>
-            </div>
-          </div>
-          <div class="p-3 rounded-xl bg-gray-50 border border-gray-200">
-            <div class="font-semibold text-gray-900">Export</div>
-            <div class="text-xs text-gray-500 mt-1">White background, black text, includes recipes + cart.</div>
-            <button class="mt-2 w-full px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 shadow" data-action="export-plan">Export Printable PDF</button>
-          </div>
+          <p class="text-xs text-gray-500">${brandName(p.brand)} • ${p.hex}</p>
         </div>
-      `;
-      openModal('Advanced', body, [{label:'Done', className:'px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700', action:'advanced-save'}]);
-    }
-    function saveAdvanced() {
-      const a=$('#set-owned-swap'), b=$('#set-crossbrand-swap'), c=$('#set-strict-types'), d=$('#set-deltaL'), e=$('#set-avoid-owned'), f=$('#set-qty-usage');
-      if (a) state.settings.recipe.enableOwnedSwap = !!a.checked;
-      if (b) state.settings.recipe.allowCrossBrandOwnedSwap = !!b.checked;
-      if (c) state.settings.recipe.strictTypes = !!c.checked;
-      if (d) state.settings.recipe.recipeDeltaL = clamp(parseInt(d.value,10)||18, 6, 35);
-      if (e) state.settings.cart.avoidOwnedPurchases = !!e.checked;
-      if (f) state.settings.cart.qtyPerUsage = !!f.checked;
-      saveState(); closeModal(); updateColorMatches(); renderBuylist();
-      showToast('Settings saved', 'success');
-    }
-    // Matcher image
-    let uploadedImage=null;
-    function loadMatcherImageFromFile(file) {
-      const r=new FileReader();
-      r.onload = (e) => {
-        state.matcher.uploadedImageDataUrl = String(e.target.result||'');
-        saveState();
-        loadMatcherImageFromDataUrl(state.matcher.uploadedImageDataUrl, () => {
-          state.matcher.markers=[];
-          state.matcher.markerCounter=0;
-          state.ui.recipeExpandedByMarkerId={};
-          saveState();
-          $('#markers-container').innerHTML='';
-          renderMarkers(); updateColorMatches();
-        });
-      };
-      r.readAsDataURL(file);
-      $('#image-upload').value='';
-    }
-    function loadMatcherImageFromDataUrl(url, cb) {
-      uploadedImage=new Image();
-      uploadedImage.onload = () => {
-        $('#upload-zone').classList.add('hidden');
-        $('#image-container').classList.remove('hidden');
-        requestAnimationFrame(() => { drawImage(); if (cb) cb(); });
-      };
-      uploadedImage.src=url;
-    }
-    function drawImage() {
-      if (!uploadedImage) return;
-      const canvas=$('#image-canvas');
-      const ctx=canvas.getContext('2d');
-      const container=canvas.parentElement;
-      const w=container.clientWidth||1, h=container.clientHeight||1;
-      canvas.width=w; canvas.height=h;
-      const scale=Math.min(w/uploadedImage.width, h/uploadedImage.height);
-      const x=(w-uploadedImage.width*scale)/2;
-      const y=(h-uploadedImage.height*scale)/2;
-      ctx.fillStyle='#f3f4f6';
-      ctx.fillRect(0,0,w,h);
-      ctx.drawImage(uploadedImage, x, y, uploadedImage.width*scale, uploadedImage.height*scale);
-    }
-    function clearImage() {
-      uploadedImage=null;
-      state.matcher.uploadedImageDataUrl=null;
-      state.matcher.markers=[];
-      state.matcher.markerCounter=0;
-      state.ui.recipeExpandedByMarkerId={};
-      saveState();
-      $('#upload-zone').classList.remove('hidden');
-      $('#image-container').classList.add('hidden');
-      $('#markers-container').innerHTML='';
-      updateColorMatches();
-    }
-    function addMarker() {
-      if (!uploadedImage) return showToast('Upload an image first', 'error');
-      const id=++state.matcher.markerCounter;
-      state.matcher.markers.push({id, xPct:50, yPct:50, colorHex:'#888888'});
-      saveState(); renderMarkers();
-      setTimeout(() => sampleMarkerColor(id), 60);
-    }
-    function renderMarkers() {
-      const c=$('#markers-container'); c.innerHTML='';
-      state.matcher.markers.forEach((m,i) => {
-        const el=document.createElement('div');
-        el.className='color-marker absolute w-8 h-8 rounded-full border-4 border-white shadow-lg';
+        <span class="text-xs text-indigo-600 font-medium">${p.score}%</span>
+      </div>`;
+    };
+    return `<div class="bg-gray-50 rounded-xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg shadow-inner border-2 border-white"
+          style="background-color:${m.hex}"></div>
+          <div><p class="font-semibold text-gray-800">Point ${idx+1}</p><p class="text-xs text-gray-500
+          font-mono uppercase">${m.hex}</p></div>
+        </div>
+        <button class="text-xs font-medium text-indigo-600 hover:text-indigo-700" data-action="toggle-recipe"
+        data-marker="${m.id}">${recipeOpen?"Hide Recipe":"Show Recipe"}</button>
+      </div>
+      ${ownedAlt?`<div class="mb-3 p-3 bg-white rounded-lg border border-amber-100">
+        <div class="flex items-center gap-2"><span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100
+        text-amber-700 font-semibold">Owned alternative</span><span class="text-xs text-gray-500">Closest
+        paint you already have</span></div>
+        <div class="mt-2 flex items-center gap-2"><div class="w-6 h-6 rounded-md shadow-sm"
+        style="background-color:${ownedAlt.hex}"></div>
+          <div class="flex-1 min-w-0"><p class="text-sm font-medium text-gray-800
+          truncate">${escapeHtml(ownedAlt.name)}</p><p class="text-xs
+          text-gray-500">${brandName(ownedAlt.brand)} • ${ownedAlt.hex}</p></div>
+          <span class="text-xs text-indigo-600 font-medium">${ownedAlt.score}%</span>
+        </div>
+      </div>`:""}
+      ${recipeOpen?`<div class="mb-3">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Recipe
+          (${brandName(recipeBrand)})</div>
+          <button class="text-[11px] px-2 py-1 rounded-lg bg-white border border-gray-200 hover:bg-gray-50"
+          data-action="add-recipe-to-cart" data-marker="${m.id}">Add recipe to cart</button>
+        </div>
+        <div class="space-y-2">${row(base,"Base","Base")}${row(shade,"Shade","Shade")}${row(hi,"Highlight","Hi
+        ghlight")}</div>
+      </div>`:""}
+      <div class="space-y-2">${matches.map(matchRow).join("")}</div>
+    </div>`;
+  }).join("");
+}
+let invBrandFilter="all", invSearch="", invOwnedOnly=false;
+function refreshTestPicker(){
+  const sel=$("test-inv-pick"); if(!sel) return;
+  const curr=sel.value;
+  const opts=state.inventory.slice().sort((a,b)=>(a.paint_name||"").localeCompare(b.paint_name||""))
+    .map(p=>`<option value="${p.id}">${escapeHtml(p.paint_name)} — ${brandName(p.brand)}</option>`).join("");
+  sel.innerHTML=`<option value="">— Select a paint —</option>${opts}`;
+  if(curr && state.inventory.find(p=>p.id===curr)) sel.value=curr;
+}
+function renderInventory(){
+  const gridWrap=$("inventory-grid"); const grid=gridWrap.querySelector(".grid"); const
+  empty=$("empty-inventory");
+  let list=state.inventory.slice();
+  if(invBrandFilter!=="all") list=list.filter(p=>p.brand===invBrandFilter);
+  if(invOwnedOnly) list=list.filter(p=>p.owned);
+  if(invSearch){const q=invSearch.toLowerCase();
+  list=list.filter(p=>(p.paint_name||"").toLowerCase().includes(q)||(p.brand||"").toLowerCase().includes(q));}
+  const total=state.inventory.length, owned=state.inventory.filter(p=>p.owned).length;
+  $("paint-count").textContent=`(${total} paints)`; $("inventory-stats").textContent=`${owned} owned`;
+  if(!list.length){empty.classList.remove("hidden"); grid.innerHTML=""; refreshTestPicker(); return;}
+  empty.classList.add("hidden");
+  grid.innerHTML=list.map(p=>`<div class="paint-swatch bg-white rounded-xl p-3 shadow-sm hover:shadow-lg
+  cursor-pointer relative group">
+    <div class="w-full aspect-square rounded-lg mb-2 shadow-inner relative" style="background-color:${p.hex}">
+      ${p.owned?'<span class="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center
+      justify-center text-white text-xs">✓</span>':""}
+      <button class="absolute bottom-1 right-1 text-[10px] px-2 py-1 rounded-full bg-white/90 text-gray-700
+      shadow hover:bg-white" data-action="toggle-owned" data-id="${p.id}">${p.owned?"Owned":"Not
+      owned"}</button>
+    </div>
+    <h4 class="font-medium text-sm text-gray-800 truncate">${escapeHtml(p.paint_name)}</h4>
+    <p class="text-xs text-gray-500">${brandName(p.brand)}</p>
+    <div class="flex items-center gap-2 mt-1 flex-wrap">
+      <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600
+      font-semibold">${escapeHtml(p.type||"Other")}</span>
+      <span class="text-xs text-gray-400 font-mono uppercase">${p.hex}</span>
+    </div>
+    <div class="flex items-center justify-between mt-2">
+      <div class="flex items-center gap-1">
+        <button class="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm"
+        data-action="inv-qty" data-id="${p.id}" data-delta="-1">-</button>
+        <span class="text-sm font-medium w-6 text-center">${p.quantity||1}</span>
+        <button class="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm"
+        data-action="inv-qty" data-id="${p.id}" data-delta="1">+</button>
+      </div>
+      <button class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition"
+      data-action="inv-delete" data-id="${p.id}">✕</button>
+    </div>
+  </div>`).join("");
+  refreshTestPicker();
+}
+function renderBuylist(){
+  $("buylist-count").textContent=`(${state.buylist.length} items)`;
+  const grid=$("buylist-grid").querySelector(".grid"); const empty=$("empty-buylist");
+  if(!state.buylist.length){empty.classList.remove("hidden"); grid.innerHTML=""; return;}
+  empty.classList.add("hidden");
+  grid.innerHTML=state.buylist.map(i=>`<div class="paint-swatch bg-white rounded-xl p-3 shadow-sm
+  hover:shadow-lg cursor-pointer relative group">
+    <div class="w-full aspect-square rounded-lg mb-2 shadow-inner" style="background-color:${i.hex}"></div>
+    <h4 class="font-medium text-sm text-gray-800 truncate">${escapeHtml(i.paint_name)}</h4>
+    <p class="text-xs text-gray-500">${brandName(i.brand)}</p>
+    <div class="flex items-center gap-2 mt-1 flex-wrap">
+      <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600
+      font-semibold">${escapeHtml(i.type||"Other")}</span>
+      ${i.role?`<span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700
+      font-semibold">${escapeHtml(i.role)}</span>`:""}
+      <span class="text-xs text-gray-400 font-mono uppercase">${i.hex}</span>
+    </div>
+    <div class="flex items-center justify-between mt-2 gap-2">
+      <div class="flex items-center gap-1">
+        <button class="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm"
+        data-action="cart-qty" data-id="${i.id}" data-delta="-1">-</button>
+        <span class="text-sm font-medium w-6 text-center">${i.quantity||1}</span>
+        <button class="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm"
+        data-action="cart-qty" data-id="${i.id}" data-delta="1">+</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="text-xs px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition
+        opacity-0 group-hover:opacity-100" data-action="cart-got" data-id="${i.id}">Got it</button>
+        <button class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition"
+        data-action="cart-del" data-id="${i.id}">✕</button>
+      </div>
+    </div>
+  </div>`).join("");
+}
+function renderProjects(){
+  const grid=$("projects-grid"), empty=$("projects-empty");
+  if(!state.projects.length){empty.classList.remove("hidden"); grid.innerHTML=""; return;}
+  empty.classList.add("hidden");
+  grid.innerHTML=state.projects.slice().sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at))).
+  map(p=>`<div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="h-28 bg-gray-100 flex items-center justify-center">${p.thumb?`<img src="${p.thumb}"
+    class="h-full w-full object-cover" alt="Project thumbnail"/>`:`<div class="text-gray-400 text-sm">No
+    thumbnail</div>`}</div>
+    <div class="p-4">
+      <div class="flex items-center justify-between gap-2">
+        <div><p class="font-semibold text-gray-800">${escapeHtml(p.name)}</p><p class="text-xs
+        text-gray-500">${new Date(p.created_at).toLocaleString()}</p></div>
+        <span class="text-[10px] px-2 py-1 rounded-full bg-gray-100 text-gray-600
+        font-semibold">${p.brandLock?brandName(p.brandLock):"Multi-brand"}</span>
+      </div>
+      <div class="mt-3 flex gap-2">
+        <button class="flex-1 px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium
+        hover:bg-indigo-700" data-action="project-load" data-id="${p.id}">Load</button>
+        <button class="px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm font-medium
+        hover:bg-gray-50" data-action="project-delete" data-id="${p.id}">Delete</button>
+      </div>
+    </div>
+  </div>`).join("");
+}
+function createProject(){
+  const name=prompt("Project name:"); if(!name) return;
+  const proj={id:uid(),name:name.trim(),created_at:new Date().toISOString(),thumb:uploadedImage?$("image-canva
+  s").toDataURL("image/jpeg",0.7):null,markers:structuredClone(markers),brandLock:state.settings.brandLock||""
+  ,buylist:structuredClone(state.buylist),recipeSettings:{recipeIntensity:state.settings.recipeIntensity,prefe
+  rOwned:state.settings.preferOwned,allowCrossBrandOwned:state.settings.allowCrossBrandOwned}};
+  state.projects.push(proj); saveState(); renderProjects(); showToast("Project created","success");
+}
+function saveToProject(){
+  if(!state.projects.length){showToast("Create a project first","info");return}
+  const names=state.projects.map((p,i)=>`${i+1}. ${p.name}`).join("\n");
+  const idx=prompt("Save to which project? Enter number:\n"+names); const n=Number(idx);
+  if(!n||n<1||n>state.projects.length) return;
+  const p=state.projects[n-1];
+  p.thumb=uploadedImage?$("image-canvas").toDataURL("image/jpeg",0.7):p.thumb;
+  p.markers=structuredClone(markers);
+  p.brandLock=state.settings.brandLock||"";
+  p.buylist=structuredClone(state.buylist);
+  p.recipeSettings={recipeIntensity:state.settings.recipeIntensity,preferOwned:state.settings.preferOwned,allo
+  wCrossBrandOwned:state.settings.allowCrossBrandOwned};
+  saveState(); renderProjects(); showToast("Saved to project","success");
+}
+function loadProject(id){
+  const p=state.projects.find(x=>x.id===id); if(!p) return;
+  state.settings.brandLock=p.brandLock||"";
+  state.settings.recipeIntensity=p.recipeSettings?.recipeIntensity ?? state.settings.recipeIntensity;
+  state.settings.preferOwned=p.recipeSettings?.preferOwned ?? state.settings.preferOwned;
+  state.settings.allowCrossBrandOwned=p.recipeSettings?.allowCrossBrandOwned ??
+  state.settings.allowCrossBrandOwned;
+  state.buylist=structuredClone(p.buylist||[]);
+  saveState();
+  markers=structuredClone(p.markers||[]);
+  markerCounter=Math.max(0,...markers.map(m=>m.id||0),0);
+  $("markers-container").innerHTML="";
+  if(p.thumb){
+    uploadedImage=new Image();
+    uploadedImage.onload=()=>{
+      $("upload-zone").classList.add("hidden"); $("image-container").classList.remove("hidden");
+      drawMatcherImage();
+      markers.forEach((m,idx)=>{
+        const el=document.createElement("div");
+        el.className="color-marker absolute w-8 h-8 rounded-full border-4 border-white shadow-lg";
         el.dataset.markerId=String(m.id);
-        el.style.left=`${m.xPct}%`;
-        el.style.top=`${m.yPct}%`;
-        el.style.transform='translate(-50%,-50%)';
-        el.style.backgroundColor=m.colorHex||'#888888';
-        const label=document.createElement('span');
-        label.className='absolute -top-6 left-1/2 -translate-x-1/2 bg-white text-gray-800 text-xs font-bold px-2 py-0.5 rounded-full shadow';
-        label.textContent=String(i+1);
-        el.appendChild(label);
-        const del=document.createElement('button');
-        del.className='absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 flex items-center justify-center';
-        del.textContent='×';
-        del.dataset.action='marker-delete';
-        del.dataset.markerId=String(m.id);
-        el.appendChild(del);
-        c.appendChild(el);
+        el.style.backgroundColor=m.hex||"#888";
+        el.style.left=`calc(${m.xPct}% - 16px)`; el.style.top=`calc(${m.yPct}% - 16px)`;
+        el.style.transform="none";
+        el.innerHTML=`<span class="absolute -top-6 left-1/2 -translate-x-1/2 bg-white text-gray-800 text-xs
+        font-bold px-2 py-0.5 rounded-full shadow">${idx+1}</span>
+        <button class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs
+        hover:bg-red-600 flex items-center justify-center" data-action="delete-marker">×</button>`;
+        $("markers-container").appendChild(el);
+        makeDraggable(el);
       });
-    }
-    function sampleMarkerColor(id) {
-      if (!uploadedImage) return;
-      const canvas=$('#image-canvas');
-      const ctx=canvas.getContext('2d');
-      const el=document.querySelector(`.color-marker[data-marker-id="${id}"]`);
-      if (!el) return;
-      const x=el.offsetLeft+16, y=el.offsetTop+16;
-      try {
-        const px=ctx.getImageData(x,y,1,1).data;
-        const hex=rgbToHex(px[0],px[1],px[2]);
-        el.style.backgroundColor=hex;
-        const m=state.matcher.markers.find(mm=>mm.id===id);
-        if (m) m.colorHex=hex;
-        saveState();
-        updateColorMatches();
-      } catch {}
-    }
-    function deleteMarker(id) {
-      state.matcher.markers = state.matcher.markers.filter(m=>m.id!==id);
-      delete state.ui.recipeExpandedByMarkerId[String(id)];
-      saveState();
-      renderMarkers();
-      updateColorMatches();
-    }
-    // Drag marker via delegation
-    let drag={active:false, markerId:null, startX:0,startY:0,startLeft:0,startTop:0};
-    function startDragMarker(el, e) {
-      const id=parseInt(el.dataset.markerId,10);
-      if(!id) return;
-      drag.active=true; drag.markerId=id; drag.startX=e.clientX; drag.startY=e.clientY;
-      drag.startLeft=el.offsetLeft; drag.startTop=el.offsetTop;
-      el.style.cursor='grabbing'; el.style.zIndex='100';
-    }
-    function moveDrag(e) {
-      if(!drag.active) return;
-      const id=drag.markerId;
-      const el=document.querySelector(`.color-marker[data-marker-id="${id}"]`);
-      if(!el) return;
-      const cont=$('#markers-container');
-      const rect=cont.getBoundingClientRect();
-      let newLeft=drag.startLeft + (e.clientX-drag.startX);
-      let newTop=drag.startTop + (e.clientY-drag.startY);
-      newLeft=clamp(newLeft,0,rect.width-32);
-      newTop=clamp(newTop,0,rect.height-32);
-      el.style.left=newLeft+'px'; el.style.top=newTop+'px'; el.style.transform='none';
-      const x=newLeft+16, y=newTop+16;
-      const m=state.matcher.markers.find(mm=>mm.id===id);
-      if(m) { m.xPct=(x/rect.width)*100; m.yPct=(y/rect.height)*100; }
-      sampleMarkerColor(id);
-    }
-    function stopDrag() {
-      if(!drag.active) return;
-      const el=document.querySelector(`.color-marker[data-marker-id="${drag.markerId}"]`);
-      if (el) { el.style.cursor='grab'; el.style.zIndex=''; }
-      drag.active=false; drag.markerId=null;
-      saveState();
-      updateColorMatches();
-    }
-    // Plan rendering
-    function badgeForDistance(dist) {
-      if (dist>=95) return {label:'Exact', cls:'bg-green-100 text-green-700'};
-      if (dist>=88) return {label:'Close', cls:'bg-indigo-100 text-indigo-700'};
-      return {label:'Alt', cls:'bg-gray-100 text-gray-600'};
-    }
-    function renderPickRow(p, opts={}) {
-      const owned = !!opts.owned;
-      const badge = opts.badge || badgeForDistance(p.distance||0);
-      const typePill = p.type ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-semibold">${escapeHtml(p.type)}</span>` : '';
-      const ownedPill = owned ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">Owned</span>` : '';
-      const payload = encodeURIComponent(JSON.stringify(opts.payload || p));
-      const extraRight = opts.extraRight || '';
-      return `
-        <div class="flex items-center gap-2 p-2 bg-white rounded-lg hover:shadow-md transition cursor-pointer"
-             data-action="open-add" data-payload="${payload}">
-          <div class="w-6 h-6 rounded-md shadow-sm flex-shrink-0" style="background-color:${p.hex}"></div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 flex-wrap">
-              <p class="text-sm font-medium text-gray-800 truncate">${escapeHtml(p.paint_name)}</p>
-              <span class="text-[10px] px-2 py-0.5 rounded-full ${badge.cls} font-semibold">${badge.label}</span>
-              ${typePill} ${ownedPill}
-            </div>
-            <p class="text-xs text-gray-500">${formatBrand(p.brand)} • <span class="font-mono">${String(p.hex||'').toUpperCase()}</span></p>
-          </div>
-          <div class="text-right flex items-center gap-2">
-            ${extraRight}
-            <span class="text-xs text-indigo-600 font-semibold">${p.distance ?? 0}%</span>
-          </div>
-        </div>
-      `;
-    }
-    function fallbackRecipeBrand(hex) {
-      const top = findClosest(hex, null, 1)[0];
-      return top ? top.brand : 'citadel';
-    }
-    function renderRecipeBlock(marker) {
-      const open = !!state.ui.recipeExpandedByMarkerId[String(marker.id)];
-      const recipeBrand = state.settings.conversionBrand || fallbackRecipeBrand(marker.colorHex);
-      const rec = recipeFor(marker.colorHex, recipeBrand);
-      const idx = state.matcher.markers.findIndex(m => m.id===marker.id) + 1;
-      const pickCard = (roleLabel, obj) => {
-        if (!obj?.pick) return `<div class="p-2 bg-white rounded-lg border border-gray-100 text-sm"><strong>${roleLabel}</strong>: <span class="text-gray-500">No suggestion</span></div>`;
-        const p=obj.pick;
-        const owned=isOwned(p.brand,p.paint_name);
-        const extraRight = `<button class="text-[11px] px-2 py-1 rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
-                              data-action="buy-add"
-                              data-payload="${encodeURIComponent(JSON.stringify({brand:p.brand, paint_name:p.paint_name, hex:p.hex, type:p.type, sku:p.sku||null, role:roleLabel, reason:`Recipe for Point ${idx}`}))}">Add</button>`;
-        return renderPickRow(p, {badge:{label:roleLabel, cls:'bg-purple-100 text-purple-700'}, owned, payload:{brand:p.brand, paint_name:p.paint_name, hex:p.hex, type:p.type, sku:p.sku||null}, extraRight});
-      };
-      const ownedAltLine = (obj) => {
-        if(!obj?.altOwned) return '';
-        const o=obj.altOwned;
-        return `<div class="mt-2 text-xs text-gray-600 bg-amber-50 border border-amber-100 rounded-lg p-2">
-          Owned alternative: <span class="font-semibold">${escapeHtml(o.paint_name)}</span> (${formatBrand(o.brand)}) • ${o.distance}%
-        </div>`;
-      };
-      return `
-        <div class="mb-3">
-          <div class="flex items-center justify-between mb-2">
-            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Recipe (${formatBrand(recipeBrand)}) • Base / Shade / Highlight</div>
-            <button class="text-xs font-medium text-indigo-600 hover:text-indigo-700"
-                    data-action="recipe-toggle" data-payload="${encodeURIComponent(JSON.stringify({markerId:marker.id}))}">${open?'Hide':'Show'}</button>
-          </div>
-          ${open ? `
-            <div class="space-y-2">
-              ${pickCard('Base', rec.base)} ${ownedAltLine(rec.base)}
-              ${pickCard('Shade', rec.shade)} ${ownedAltLine(rec.shade)}
-              ${pickCard('Highlight', rec.highlight)} ${ownedAltLine(rec.highlight)}
-            </div>
-            <button class="w-full mt-2 px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 shadow"
-                    data-action="recipe-add-all" data-payload="${encodeURIComponent(JSON.stringify({markerId:marker.id}))}">Add all recipe paints to Buy List</button>
-          ` : ''}
-        </div>
-      `;
-    }
-    function updateColorMatches() {
-      const container=$('#color-matches');
-      const exportBtn=$('#export-matches-btn');
-      const addAllBtn=$('#add-all-buylist-btn');
-      const markers=state.matcher.markers||[];
-      if (!markers.length) {
-        exportBtn.classList.add('hidden');
-        addAllBtn.classList.add('hidden');
-        container.innerHTML = `
-          <div class="text-center py-12 text-gray-400">
-            <p class="font-medium">No colors selected</p>
-            <p class="text-sm mt-1">Upload an image and add color points</p>
-          </div>
-        `;
-        return;
-      }
-      exportBtn.classList.remove('hidden');
-      addAllBtn.classList.remove('hidden');
-      const idxOwned=ownedIndex();
-      container.innerHTML = markers.map((marker, i) => {
-        const brandLock=state.settings.conversionBrand || null;
-        const matches=findClosest(marker.colorHex, brandLock, 5, null);
-        const matchRows = matches.map(m => renderPickRow(m, {owned: idxOwned.has(paintKey(m.brand,m.paint_name)), payload:{brand:m.brand, paint_name:m.paint_name, hex:m.hex, type:m.type, sku:m.sku||null} })).join('');
-        return `
-          <div class="bg-gray-50 rounded-xl p-4">
-            <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg shadow-inner border-2 border-white" style="background:${marker.colorHex}"></div>
-                <div>
-                  <p class="font-semibold text-gray-800">Point ${i+1}</p>
-                  <p class="text-xs text-gray-500 font-mono uppercase">${marker.colorHex.toUpperCase()}</p>
-                </div>
-              </div>
-              <button class="text-xs font-medium text-red-500 hover:text-red-600" data-action="marker-delete" data-marker-id="${marker.id}">Remove</button>
-            </div>
-            ${renderRecipeBlock(marker)}
-            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Top matches</div>
-            <div class="space-y-2">${matchRows}</div>
-          </div>
-        `;
-      }).join('');
-    }
-    // Add modal
-    function openAddModal(p) {
-      const owned=isOwned(p.brand,p.paint_name);
-      const body = `
-        <div class="flex items-center gap-4 mb-4">
-          <div class="w-14 h-14 rounded-xl shadow-lg" style="background:${p.hex}"></div>
-          <div>
-            <div class="font-semibold text-gray-900">${escapeHtml(p.paint_name)}</div>
-            <div class="text-sm text-gray-500">${formatBrand(p.brand)} • <span class="font-mono">${String(p.hex).toUpperCase()}</span></div>
-            <div class="text-xs text-gray-500 mt-1">Type: <span class="font-semibold">${escapeHtml(p.type||PaintType.Other)}</span> ${owned? ' • <span class="text-amber-700 font-semibold">Owned</span>':''}</div>
-          </div>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Qty</label>
-            <input id="modal-qty" type="number" min="1" value="1" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-          </div>
-          <div class="sm:col-span-2">
-            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Reason (optional)</label>
-            <input id="modal-reason" type="text" placeholder="e.g., highlight for cloak" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-          </div>
-        </div>
-      `;
-      openModal('Add Paint', body, [
-        {label:'Add to Inventory', className:'px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700', action:'modal-add-inv', payload:p},
-        {label:'Add to Buy List', className:'px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700', action:'modal-add-buy', payload:p},
-        {label:'Cancel', action:'modal-close'}
-      ]);
-    }
-    const modalQty = () => clamp(parseInt($('#modal-qty')?.value||'1',10)||1, 1, 99);
-    const modalReason = () => String($('#modal-reason')?.value||'').trim();
-    function addToInventory(p, qty=1) {
-      const key=paintKey(p.brand,p.paint_name);
-      const existing=state.data.inventory.find(x=>paintKey(x.brand,x.paint_name)===key);
-      if(existing) {
-        existing.owned=true;
-        existing.hex=p.hex||existing.hex;
-        existing.type=p.type||existing.type;
-        existing.sku=p.sku||existing.sku||null;
-        existing.quantity=clamp((existing.quantity||1)+qty, 1, 999);
-        existing.updated_at=nowIso();
+      $("brand-lock").value=state.settings.brandLock||"";
+      $("recipe-intensity").value=String(state.settings.recipeIntensity||18);
+      $("prefer-owned").checked=!!state.settings.preferOwned;
+      $("allow-cross-brand-owned").checked=!!state.settings.allowCrossBrandOwned;
+      $("cart-skip-owned").checked=!!state.settings.cartSkipOwned;
+      $("add-all-to-buylist-btn").disabled=!markers.length;
+      $("export-plan-btn").disabled=!markers.length;
+      renderMatches();
+    };
+    uploadedImage.src=p.thumb;
+  } else resetMatcher();
+  renderBuylist(); renderProjects(); showToast("Project loaded","success"); switchView("matcher");
+}
+function deleteProject(id){state.projects=state.projects.filter(p=>p.id!==id); saveState(); renderProjects();
+showToast("Project deleted","success")}
+function openAddDialog({brand,name,hex,type,role}){
+  const dlg=document.createElement("div");
+  dlg.className="fixed inset-0 z-50 flex items-center justify-center";
+  dlg.innerHTML=`<div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-action="dlg-close"></div>
+  <div class="relative bg-white rounded-2xl shadow-2xl p-8 max-w-sm mx-4 glass-card">
+    <div class="flex items-center gap-4 mb-6">
+      <div class="w-16 h-16 rounded-xl shadow-lg" style="background-color:${hex}"></div>
+      <div><h3 class="font-semibold text-gray-800">${escapeHtml(name)}</h3><p class="text-sm
+      text-gray-500">${brandName(brand)} • <span class="font-mono">${hex}</span></p>
+      <p class="text-xs text-gray-500 mt-1">Type: <span
+      class="font-semibold">${escapeHtml(type||"Other")}</span>${role?` • Role: <span
+      class="font-semibold">${escapeHtml(role)}</span>`:""}</p></div>
+    </div>
+    <p class="text-gray-600 mb-6 font-medium">Where would you like to add this paint?</p>
+    <div class="flex gap-3">
+      <button class="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg
+      font-medium hover:from-green-600 hover:to-green-700 transition shadow-lg" data-action="dlg-add-inv"
+      data-brand="${brand}" data-name="${escapeHtml(name)}" data-hex="${hex}"
+      data-type="${escapeHtml(type||"Other")}">My Inventory</button>
+      <button class="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg
+      font-medium hover:from-blue-600 hover:to-blue-700 transition shadow-lg" data-action="dlg-add-cart"
+      data-brand="${brand}" data-name="${escapeHtml(name)}" data-hex="${hex}"
+      data-type="${escapeHtml(type||"Other")}" data-role="${escapeHtml(role||"")}">Buy List</button>
+    </div>
+}
+    <button class="w-full mt-3 px-4 py-2 text-gray-600 hover:text-gray-700 font-medium"
+    data-action="dlg-close">Cancel</button>
+  </div>`;
+  document.body.appendChild(dlg);
+function addToInventory({brand,name,hex,type}){
+  const existing=state.inventory.find(p=>`${p.brand}||${p.paint_name}`.toLowerCase()===`${brand}||${name}`.toL
+  owerCase());
+  if(existing){existing.owned=true; existing.hex=hex||existing.hex;
+  existing.type=type||existing.type||"Other"; existing.quantity=Math.max(1,(existing.quantity||1)+1)}
+  else state.inventory.push({id:uid(),brand,paint_name:name,hex,type:type||"Other",owned:true,quantity:1});
+  saveState(); renderInventory(); refreshTestPicker(); renderMatches(); showToast("Inventory
+  updated","success");
+}
+function exportPlan(){showToast("Export Plan uses html2pdf and runs in browser.","info"); /* keep button; user
+can use it in app */}
+let currentView="matcher";
+function switchView(view){
+  currentView=view;
+  ["matcher","projects","inventory","buylist","test"].forEach(v=>{
+    const el=$("view-"+v); if(!el) return; el.classList.toggle("hidden",v!==view);
+  });
+  document.querySelectorAll(".tab-btn").forEach(btn=>{
+    const active=btn.dataset.view===view;
+    btn.classList.toggle("tab-active",active);
+    btn.classList.toggle("text-white/70",!active);
+  });
+  if(view==="inventory") renderInventory();
+  if(view==="buylist") renderBuylist();
+  if(view==="projects") renderProjects();
+  if(view==="test"){refreshTestPicker(); if(testImage) drawTestImage();}
+}
+function setupDragDrop(){
+  const zone=$("upload-zone");
+  zone.addEventListener("dragover",(e)=>{e.preventDefault(); zone.classList.add("border-purple-500")});
+  zone.addEventListener("dragleave",()=>zone.classList.remove("border-purple-500"));
+  zone.addEventListener("drop",(e)=>{e.preventDefault(); zone.classList.remove("border-purple-500"); const
+  f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) handleImageFile(f)});
+}
+let testImage=null, testUndoStack=[], isPainting=false, lastPt=null;
+function handleTestFile(file){
+  if(!file||!file.type||!file.type.startsWith("image/")) return;
+  const r=new FileReader();
+  r.onload=(e)=>{testImage=new Image(); testImage.onload=()=>{$("test-empty").classList.add("hidden");
+  testUndoStack=[]; drawTestImage(); clearTestPaint(); showToast("Test image loaded","success")};
+  testImage.src=e.target.result};
+  r.readAsDataURL(file);
+  $("test-image-upload").value="";
+}
+function drawTestImage(){
+  if(!testImage) return;
+  const base=$("test-base-canvas"), paint=$("test-paint-canvas"), stage=$("test-stage");
+  const w=Math.max(1,stage.clientWidth), h=Math.max(1,stage.clientHeight);
+  base.width=w; base.height=h; paint.width=w; paint.height=h;
+  const bctx=base.getContext("2d");
+  bctx.fillStyle="#1f2937"; bctx.fillRect(0,0,w,h);
+  const scale=Math.min(w/testImage.width,h/testImage.height);
+  const x=(w-testImage.width*scale)/2, y=(h-testImage.height*scale)/2;
+  bctx.drawImage(testImage,x,y,testImage.width*scale,testImage.height*scale);
+}
+function clearTestPaint(){const c=$("test-paint-canvas"); c.getContext("2d").clearRect(0,0,c.width,c.height)}
+function pushUndo(){const c=$("test-paint-canvas"); const ctx=c.getContext("2d");
+try{testUndoStack.push(ctx.getImageData(0,0,c.width,c.height)); if(testUndoStack.length>30)
+testUndoStack.shift()}catch{}}
+function undoTest(){const c=$("test-paint-canvas"); const ctx=c.getContext("2d"); const
+snap=testUndoStack.pop(); if(!snap) return showToast("Nothing to undo","info"); ctx.putImageData(snap,0,0)}
+function updateTestCursor(x,y){const c=$("test-cursor"); const size=Number($("brush-size").value||18);
+c.style.display="block"; c.style.left=x+"px"; c.style.top=y+"px"; c.style.width=size+"px";
+c.style.height=size+"px"; c.style.background=$("test-paint-color").value; c.style.opacity="0.18"}
+function testStagePos(ev){const rect=$("test-stage").getBoundingClientRect(); return
+{x:ev.clientX-rect.left,y:ev.clientY-rect.top}}
+function stamp(ctx,x,y,radius,color,opacity){ctx.globalAlpha=opacity; ctx.beginPath();
+ctx.arc(x,y,radius,0,Math.PI*2); ctx.fillStyle=color; ctx.fill(); ctx.globalAlpha=1}
+function paintTo(x,y,forceDot=false){
+  const c=$("test-paint-canvas"), ctx=c.getContext("2d");
+  const size=Number($("brush-size").value||18), opacity=Number($("brush-opacity").value||55)/100,
+  color=$("test-paint-color").value, radius=Math.max(1,size/2);
+  if(!lastPt||forceDot){stamp(ctx,x,y,radius,color,opacity); lastPt={x,y}; return;}
+  const dx=x-lastPt.x, dy=y-lastPt.y, d=Math.sqrt(dx*dx+dy*dy), step=Math.max(1,radius*0.35),
+  n=Math.ceil(d/step);
+  for(let i=1;i<=n;i++){const t=i/n; stamp(ctx,lastPt.x+dx*t,lastPt.y+dy*t,radius,color,opacity)}
+  lastPt={x,y};
+}
+function setupTestPaint(){
+  const stage=$("test-stage");
+  stage.addEventListener("mousemove",(e)=>{const {x,y}=testStagePos(e); updateTestCursor(x,y); if(isPainting)
+  paintTo(x,y)});
+  stage.addEventListener("mouseleave",()=>{$("test-cursor").style.display="none"});
+  stage.addEventListener("mousedown",(e)=>{if(!testImage) return showToast("Upload an image first","error");
+  isPainting=true; pushUndo(); const {x,y}=testStagePos(e); lastPt={x,y}; paintTo(x,y,true)});
+  window.addEventListener("mouseup",()=>{isPainting=false; lastPt=null});
+}
+function onClick(e){
+  const tab=e.target.closest(".tab-btn"); if(tab){switchView(tab.dataset.view); return;}
+  const a=e.target.closest("[data-action]"); if(!a) return; const action=a.dataset.action;
+  if(action==="open-advanced"){ $("advanced-modal").classList.remove("hidden");
+  $("advanced-modal").classList.add("flex"); return;}
+  if(action==="close-advanced"){ $("advanced-modal").classList.add("hidden");
+  $("advanced-modal").classList.remove("flex"); return;}
+  if(action==="add-marker"){ addMarker(); return;}
+  if(action==="clear-image"){ resetMatcher(); return;}
+  if(action==="delete-marker"){ const markerEl=e.target.closest(".color-marker"); if(markerEl)
+  deleteMarker(Number(markerEl.dataset.markerId)); return;}
+  if(action==="toggle-recipe"){ const id=Number(a.dataset.marker); const m=markers.find(x=>x.id===id); if(m)
+  m.recipeOpen=!m.recipeOpen; renderMatches(); return;}
+  if(action==="add-dialog"){ openAddDialog({brand:a.dataset.brand,name:a.dataset.name,hex:a.dataset.hex,type:a
+  .dataset.type,role:a.dataset.role||""}); return;}
+  if(action==="dlg-close"){ const dlg=e.target.closest(".fixed.inset-0.z-50"); if(dlg) dlg.remove(); return;}
+  if(action==="dlg-add-inv"){
+  addToInventory({brand:a.dataset.brand,name:a.dataset.name,hex:a.dataset.hex,type:a.dataset.type}); const
+  dlg=e.target.closest(".fixed.inset-0.z-50"); if(dlg) dlg.remove(); return;}
+  if(action==="dlg-add-cart"){ addToCart({brand:a.dataset.brand,paint_name:a.dataset.name,hex:a.dataset.hex,ty
+  pe:a.dataset.type,quantity:1,role:a.dataset.role||"",reason:(a.dataset.role?`From ${a.dataset.role}
+  suggestion`:"From match")}); const dlg=e.target.closest(".fixed.inset-0.z-50"); if(dlg) dlg.remove();
+  showToast("Added to Buy List","success"); return;}
+  if(action==="add-recipe-to-cart"){
+    const id=Number(a.dataset.marker); const m=markers.find(mm=>mm.id===id); if(!m) return;
+    const top=findClosest(m.hex,1)[0]; const recipeBrand=brandLock()||(top?.brand||"citadel");
+    const r=recipeFor(m.hex,recipeBrand);
+    const base=maybeSwapToOwned(r.base,m.hex);
+    const shade=maybeSwapToOwned(r.shade,tweakLightness(m.hex,-Number(state.settings.recipeIntensity||18)));
+    const hi=maybeSwapToOwned(r.highlight,tweakLightness(m.hex,+Number(state.settings.recipeIntensity||18)));
+    const items=[base?{brand:base.brand,paint_name:base.name,hex:base.hex,type:base.type||"Other",role:"Base",
+    reason:`Recipe base for marker ${id}`} : null,
+                 shade?{brand:shade.brand,paint_name:shade.name,hex:shade.hex,type:shade.type||"Other",role:"S
+                 hade",reason:`Recipe shade for marker ${id}`} : null,
+hi?{brand:hi.brand,paint_name:hi.name,hex:hi.hex,type:hi.type||"Other",role:"Highlight",reason:`Recipe
+                 highlight for marker ${id}`} : null].filter(Boolean);
+    let added=0; for(const it of items){ if(addToCart(it)) added++; }
+    showToast(added?`Added ${added} recipe items`:"Nothing new to add",added?"success":"info"); return;
+  }
+  if(action==="add-all-to-buylist"){
+    let added=0;
+    for(const m of markers){
+      const top=findClosest(m.hex,1)[0]; if(!top) continue;
+      if(m.recipeOpen){
+        const recipeBrand=brandLock()||(top.brand||"citadel");
+        const r=recipeFor(m.hex,recipeBrand);
+        const base=maybeSwapToOwned(r.base,m.hex);
+        const
+        shade=maybeSwapToOwned(r.shade,tweakLightness(m.hex,-Number(state.settings.recipeIntensity||18)));
+        const
+        hi=maybeSwapToOwned(r.highlight,tweakLightness(m.hex,+Number(state.settings.recipeIntensity||18)));
+        const items=[base?{brand:base.brand,paint_name:base.name,hex:base.hex,type:base.type||"Other",role:"Ba
+        se",reason:`Recipe base for marker ${m.id}`} : null,
+                     shade?{brand:shade.brand,paint_name:shade.name,hex:shade.hex,type:shade.type||"Other",rol
+                     e:"Shade",reason:`Recipe shade for marker ${m.id}`} : null,
+hi?{brand:hi.brand,paint_name:hi.name,hex:hi.hex,type:hi.type||"Other",role:"Highlight",reason:`Recipe
+                     highlight for marker ${m.id}`} : null].filter(Boolean);
+        for(const it of items){ if(addToCart(it)) added++; }
       } else {
-        state.data.inventory.push({ id:uid(), kind:'paint', brand:p.brand, paint_name:p.paint_name, hex:p.hex, type:p.type||PaintType.Other, owned:true, quantity:qty, sku:p.sku||null, created_at:nowIso(), updated_at:nowIso() });
+if(addToCart({brand:top.brand,paint_name:top.name,hex:top.hex,type:top.type||"Other",role:"Match",reason:`Top
+        match for marker ${m.id}`})) added++;
       }
-      saveState();
     }
-    // Inventory render
-    function updateBrandFilterUI() {
-      $$('[data-action="inv-brand"]').forEach(btn => {
-        const isActive = (btn.dataset.brand === state.ui.invBrand);
-        btn.classList.toggle('bg-indigo-600', isActive);
-        btn.classList.toggle('text-white', isActive);
-        btn.classList.toggle('bg-gray-100', !isActive);
-        btn.classList.toggle('text-gray-700', !isActive);
-      });
-    }
-    function renderInventory() {
-      updateBrandFilterUI();
-      const grid=$('#inventory-grid .grid');
-      const empty=$('#empty-inventory');
-      let list = state.data.inventory.slice();
-      if(state.ui.invBrand!=='all') list=list.filter(p=>p.brand===state.ui.invBrand);
-      if(state.ui.invOwnedOnly) list=list.filter(p=>p.owned);
-      if(state.ui.invSearch) {
-        const q=state.ui.invSearch.toLowerCase();
-        list=list.filter(p => (p.paint_name||'').toLowerCase().includes(q) || (p.brand||'').toLowerCase().includes(q) || (p.type||'').toLowerCase().includes(q) || (p.sku||'').toLowerCase().includes(q));
-      }
-      const total=state.data.inventory.length;
-      const ownedCt=state.data.inventory.filter(p=>p.owned).length;
-      $('#paint-count').textContent = `(${total} paints)`;
-      $('#inventory-stats').textContent = `${ownedCt} owned`;
-      $('#owned-toggle-icon').textContent = state.ui.invOwnedOnly ? ' ' : ' ';
-      if(!list.length) {
-        empty.classList.remove('hidden');
-        grid.innerHTML='';
-        return;
-      }
-      empty.classList.add('hidden');
-      grid.innerHTML = list.map(p => `
-        <div class="bg-white rounded-xl p-3 shadow-sm hover:shadow-lg cursor-pointer relative group"
-             data-action="open-add"
-             data-payload="${encodeURIComponent(JSON.stringify({brand:p.brand, paint_name:p.paint_name, hex:p.hex, type:p.type, sku:p.sku||null}))}">
-          <div class="w-full aspect-square rounded-lg mb-2 shadow-inner relative" style="background:${p.hex}">
-            ${p.owned ? '<span class="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs">
-            <button class="absolute bottom-1 right-1 text-[10px] px-2 py-1 rounded-full bg-white/90 text-gray-700 shadow hover:bg-white"
-                    data-action="inv-toggle-owned" data-payload="${encodeURIComponent(JSON.stringify({id:p.id}))}">${p.owned?'Owned':'Not owned'}</button>
-          </div>
-          <h4 class="font-medium text-sm text-gray-800 truncate">${escapeHtml(p.paint_name)}</h4>
-          <p class="text-xs text-gray-500">${formatBrand(p.brand)} • <span class="font-semibold">${escapeHtml(p.type||PaintType.Other)}</span></p>
-          <p class="text-xs text-gray-400 font-mono uppercase mt-1">${String(p.hex||'').toUpperCase()}</p>
-          ${p.sku ? `<p class="text-[10px] text-gray-400 mt-1">SKU: <span class="font-mono">${escapeHtml(p.sku)}</span></p>` : ''}
-          <div class="flex items-center justify-between mt-2">
-            <div class="flex items-center gap-1">
-              <button class="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm"
-                      data-action="inv-qty" data-payload="${encodeURIComponent(JSON.stringify({id:p.id, delta:-1}))}">-</button>
-              <span class="text-sm font-medium w-6 text-center">${p.quantity||1}</span>
-              <button class="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm"
-                      data-action="inv-qty" data-payload="${encodeURIComponent(JSON.stringify({id:p.id, delta:1}))}">+</button>
-            </div>
-            <button class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition"
-                    data-action="inv-delete" data-payload="${encodeURIComponent(JSON.stringify({id:p.id}))}"> </button>
-          </div>
-        </div>
-      `).join('');
-    }
-    // Buylist render
-    function renderBuylist() {
-      const grid=$('#buylist-grid .grid');
-      const empty=$('#empty-buylist');
-      const count=$('#buylist-count');
-      const sub=$('#buylist-subtext');
-      const list=state.data.buylist.slice();
-      count.textContent = `(${list.length} items)`;
-      sub.textContent = state.settings.cart.avoidOwnedPurchases ? 'Owned paints are skipped automatically.' : 'Auto-dedupe is on.';
-      if (!list.length) {
-        empty.classList.remove('hidden');
-        grid.innerHTML='';
-        return;
-      }
-      empty.classList.add('hidden');
-      grid.innerHTML = list.map(it => `
-        <div class="bg-white rounded-xl p-3 shadow-sm hover:shadow-lg cursor-pointer relative group">
-          <div class="w-full aspect-square rounded-lg mb-2 shadow-inner" style="background:${it.hex}"></div>
-          <h4 class="font-medium text-sm text-gray-800 truncate">${escapeHtml(it.paint_name)}</h4>
-          <p class="text-xs text-gray-500">${formatBrand(it.brand)} • <span class="font-semibold">${escapeHtml(it.type||PaintType.Other)}</span></p>
-          <p class="text-xs text-gray-400 font-mono uppercase mt-1">${String(it.hex||'').toUpperCase()}</p>
-          <div class="mt-2 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <button class="w-7 h-7 rounded bg-gray-100 hover:bg-gray-200 text-gray-700"
-                      data-action="buy-qty" data-payload="${encodeURIComponent(JSON.stringify({id:it.id, delta:-1}))}">-</button>
-              <span class="text-sm font-semibold w-6 text-center">${it.quantity||1}</span>
-              <button class="w-7 h-7 rounded bg-gray-100 hover:bg-gray-200 text-gray-700"
-                      data-action="buy-qty" data-payload="${encodeURIComponent(JSON.stringify({id:it.id, delta:1}))}">+</button>
-            </div>
-            <div class="flex items-center gap-2">
-              <button class="text-xs px-2 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700 transition opacity-0 group-hover:opacity-100"
-                      data-action="buy-move-owned" data-payload="${encodeURIComponent(JSON.stringify({id:it.id}))}">Got it</button>
-              <button class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition"
-                      data-action="buy-delete" data-payload="${encodeURIComponent(JSON.stringify({id:it.id}))}"> </button>
-            </div>
-          </div>
-        </div>
-      `).join('');
-    }
-    // Export printable HTML
-    function buildPrintableHtml() {
-      const proj=activeProject();
-      const projectName = proj ? proj.name : 'Untitled Project';
-      const brandLock = state.settings.conversionBrand ? formatBrand(state.settings.conversionBrand) : 'Multi-brand';
-      const markers = state.matcher.markers || [];
-      const cart = state.data.buylist || [];
-      const markerCards = markers.map((m,i) => {
-        const b = state.settings.conversionBrand || fallbackRecipeBrand(m.colorHex);
-        const rec = recipeFor(m.colorHex, b);
-        const row = (label, obj) => obj?.pick
-          ? `<div style="font-size:13px;">• ${label}: <strong>${escapeHtml(obj.pick.paint_name)}</strong> <span class="print-muted">(${escapeHtml(formatBrand(obj.pick.brand))}, ${escapeHtml(obj.pick.type||'')}, ${String(obj.pick.hex||'').toUpperCase()})</span></div>`
-          : `<div style="font-size:13px;">• ${label}: <span class="print-muted">No suggestion</span></div>`;
-        return `
-          <div class="print-card" style="margin-bottom:10px;">
-            <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
-              <div style="width:36px; height:36px; border-radius:8px; border:1px solid #e5e7eb; background:${m.colorHex};"></div>
-              <div>
-                <div style="font-weight:900; font-size:14px;">Point ${i+1} • ${m.colorHex.toUpperCase()}</div>
-                <div class="print-muted" style="font-size:12px;">Recipe brand: ${escapeHtml(formatBrand(b))}</div>
-              </div>
-            </div>
-            ${row('Base', rec.base)}
-            ${row('Shade', rec.shade)}
-            ${row('Highlight', rec.highlight)}
-          </div>
-        `;
-      }).join('') || `<div class="print-muted">No markers yet.</div>`;
-      const cartRows = cart.map(it => `
-        <tr>
-          <td style="padding:8px; border-bottom:1px solid #eee;">
-            <div style="display:flex; align-items:center; gap:10px;">
-              <div style="width:18px; height:18px; border-radius:4px; border:1px solid #e5e7eb; background:${it.hex};"></div>
-              <div>
-                <div style="font-weight:700;">${escapeHtml(it.paint_name)}</div>
-                <div class="print-muted" style="font-size:11px;">${escapeHtml(formatBrand(it.brand))} • ${escapeHtml(it.type||'')}</div>
-              </div>
-            </div>
-          </td>
-          <td style="padding:8px; border-bottom:1px solid #eee; font-family:monospace;">${String(it.hex||'').toUpperCase()}</td>
-          <td style="padding:8px; border-bottom:1px solid #eee; text-align:center; font-weight:700;">${it.quantity||1}</td>
-        </tr>
-      `).join('');
-      return `
-        <div class="print-sheet">
-          <div style="text-align:center; margin-bottom:14px;">
-            <div style="font-size:26px; font-weight:900;">Miniature Paint Plan</div>
-            <div class="print-muted" style="font-size:12px;">${new Date().toLocaleString()}</div>
-          </div>
-          <div class="print-card" style="margin-bottom:12px;">
-            <div style="font-size:16px; font-weight:900;">Project</div>
-            <div style="margin-top:6px; font-size:13px;">
-              <div><strong>Name:</strong> ${escapeHtml(projectName)}</div>
-              <div><strong>Brand mode:</strong> ${escapeHtml(brandLock)}</div>
-              <div><strong>Markers:</strong> ${markers.length}</div>
-            </div>
-          </div>
-          <div class="print-card" style="margin-bottom:12px;">
-            <div style="font-size:16px; font-weight:900; margin-bottom:8px;">Recipes</div>
-            ${markerCards}
-          </div>
-          <div class="print-card">
-            <div style="font-size:16px; font-weight:900; margin-bottom:8px;">Buy List</div>
-            ${cart.length ? `
-              <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                <thead>
-                  <tr>
-                    <th style="text-align:left; padding:8px; border-bottom:2px solid #e5e7eb;">Paint</th>
-                    <th style="text-align:left; padding:8px; border-bottom:2px solid #e5e7eb;">Hex</th>
-                    <th style="text-align:center; padding:8px; border-bottom:2px solid #e5e7eb;">Qty</th>
-                  </tr>
-                </thead>
-                <tbody>${cartRows}</tbody>
-              </table>
-            ` : `<div class="print-muted">Cart is empty.</div>`}
-          </div>
-        </div>
-      `;
-    }
-    function exportPrintablePdf() {
-      if (!window.html2pdf) return showToast('PDF library not loaded. Refresh.', 'error');
-      const htmlContent = buildPrintableHtml();
-      const opt = {
-        margin:[0,0,0,0],
-        filename:`miniature-paint-plan-${new Date().toISOString().split('T')[0]}.pdf`,
-        image:{type:'jpeg',quality:0.98},
-        html2canvas:{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff'},
-        jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
-      };
-      window.html2pdf().set(opt).from(htmlContent).save()
-        .then(()=>showToast('Exported printable PDF','success'))
-        .catch(()=>showToast('Error generating PDF','error'));
-    }
-    // Add all recipes
-    function addAllMarkersToBuy() {
-      const markers=state.matcher.markers||[];
-      if (!markers.length) return;
-      let added=0;
-      for (const m of markers) added += addRecipeToBuy(m.id, m.colorHex);
-      saveState();
-      renderBuylist();
-      showToast(added ? `Added/updated ${added} cart items` : 'Nothing new to add', added ? 'success' : 'info');
-      switchView('buylist');
-    }
-    // Views
-    function switchView(view) {
-      state.ui.currentView=view; saveState();
-      $$('.tab-btn').forEach(b=>{ b.classList.remove('tab-active'); b.classList.add('text-white/70'); });
-      $$('[id^="view-"]').forEach(v=>v.classList.add('hidden'));
-      const tab=document.querySelector(`.tab-btn[data-tab="${view}"]`);
-      if (tab) { tab.classList.add('tab-active'); tab.classList.remove('text-white/70'); }
-      const panel=$('#view-'+view);
-      if (panel) panel.classList.remove('hidden');
-      if (view==='inventory') renderInventory();
-      if (view==='buylist') renderBuylist();
-    }
-    // Event delegation (single click handler for actions)
-    document.addEventListener('click', (e) => {
-      const btn=e.target.closest('[data-action]');
-      if (!btn) return;
-      const a=btn.dataset.action;
-      if (a==='modal-close') return closeModal();
-      if (a==='tab') return switchView(btn.dataset.tab);
-      if (a==='open-projects') return openProjectsModal();
-      if (a==='proj-create') {
-        const name=String($('#proj-new-name')?.value||'').trim();
-        if (!name) return showToast('Enter a project name','error');
-        createProject(name);
-        closeModal();
-        openProjectsModal();
-        return;
-      }
-      if (a==='proj-load') { const p=decodePayload(btn); if (p?.id) { closeModal(); loadProject(p.id); } return; }
-      if (a==='proj-delete') {
-        const p=decodePayload(btn); if(!p?.id) return;
-        state.data.projects = state.data.projects.filter(x=>x.id!==p.id);
-        if (state.data.activeProjectId===p.id) state.data.activeProjectId=null;
-        saveState(); closeModal(); openProjectsModal(); renderHeaderProject(); showToast('Project deleted','success'); return;
-      }
-      if (a==='save-project-snapshot') return saveSnapshot();
-      if (a==='open-advanced') return openAdvancedModal();
-      if (a==='advanced-save') return saveAdvanced();
-      if (a==='set-conversion') {
-        const p=decodePayload(btn);
-        state.settings.conversionBrand = p?.brand || null;
-        saveState();
-        closeModal();
-        openAdvancedModal();
-        updateColorMatches();
-        showToast(state.settings.conversionBrand ? `Brand lock: ${formatBrand(state.settings.conversionBrand)}` : 'Brand lock off', 'info');
-        return;
-      }
-      if (a==='export-plan') return exportPrintablePdf();
-      if (a==='add-marker') return addMarker();
-      if (a==='clear-image') return clearImage();
-      if (a==='marker-delete') { const id=parseInt(btn.dataset.markerId||'0',10); if(id) deleteMarker(id); return; }
-      if (a==='recipe-toggle') {
-        const p=decodePayload(btn); if(!p?.markerId) return;
-        const k=String(p.markerId);
-        state.ui.recipeExpandedByMarkerId[k] = !state.ui.recipeExpandedByMarkerId[k];
-        saveState(); updateColorMatches(); return;
-      }
-      if (a==='recipe-add-all') {
-        const p=decodePayload(btn); if(!p?.markerId) return;
-        const m=state.matcher.markers.find(x=>x.id===p.markerId);
-        if(!m) return;
-        const added=addRecipeToBuy(m.id,m.colorHex);
-        saveState(); renderBuylist(); showToast(added?`Updated ${added} cart items`:'Nothing new to add', added?'success':'info'); return;
-      }
-      if (a==='add-all-to-buylist') return addAllMarkersToBuy();
-      if (a==='open-add') { const p=decodePayload(btn); if(p) openAddModal(p); return; }
-      if (a==='buy-add') {
-        const p=decodePayload(btn); if(!p) return;
-        const r=addToBuySmart({brand:p.brand, paint_name:p.paint_name, hex:p.hex, type:p.type||PaintType.Other, sku:p.sku||null}, {reason:p.reason||'Recipe', role:p.role||null, qtyAdd:1});
-        saveState(); renderBuylist();
-        showToast(r.ok?'Added to Buy List':(r.skipped==='owned'?'Skipped (already owned)':'Could not add'), r.ok?'success':'info');
-        return;
-      }
-      if (a==='modal-add-inv') { const p=decodePayload(btn); if(!p) return; addToInventory(p, modalQty()); closeModal(); renderInventory(); updateColorMatches(); showToast('Added to inventory','success'); return; }
-      if (a==='modal-add-buy') { const p=decodePayload(btn); if(!p) return; const r=addToBuySmart(p, {reason:modalReason(), qtyAdd:modalQty()}); closeModal(); renderBuylist(); showToast(r.ok?'Added to Buy List':(r.skipped==='owned'?'Skipped (already owned)':'Could not add'), r.ok?'success':'info'); return; }
-      if (a==='inv-brand') { state.ui.invBrand = btn.dataset.brand || 'all'; saveState(); renderInventory(); return; }
-      if (a==='inv-owned-only') { state.ui.invOwnedOnly=!state.ui.invOwnedOnly; saveState(); renderInventory(); return; }
-      if (a==='inv-add') {
-        const brand=$('#new-paint-brand').value;
-        const name=String($('#new-paint-name').value||'').trim();
-        const type=$('#new-paint-type').value || PaintType.Other;
-        const hex=$('#new-paint-color').value || '#000000';
-        const qty=clamp(parseInt($('#new-paint-qty').value,10)||1,1,999);
-        const sku=String($('#new-paint-sku').value||'').trim()||null;
-        if(!name) return showToast('Enter a paint name','error');
-        addToInventory({brand, paint_name:name, hex, type, sku}, qty);
-        $('#new-paint-name').value=''; $('#new-paint-sku').value='';
-        saveState(); renderInventory(); updateColorMatches(); showToast('Inventory updated','success'); return;
-      }
-      if (a==='inv-toggle-owned') {
-        const p=decodePayload(btn); const rec=state.data.inventory.find(x=>x.id===p?.id);
-        if(!rec) return;
-        rec.owned=!rec.owned; rec.updated_at=nowIso(); saveState(); renderInventory(); updateColorMatches(); return;
-      }
-      if (a==='inv-qty') {
-        const p=decodePayload(btn); const rec=state.data.inventory.find(x=>x.id===p?.id);
-        if(!rec) return;
-        const next=(rec.quantity||1) + (p.delta||0);
-        if (next<=0) state.data.inventory = state.data.inventory.filter(x=>x.id!==rec.id);
-        else { rec.quantity=clamp(next,1,999); rec.owned=true; rec.updated_at=nowIso(); }
-        saveState(); renderInventory(); updateColorMatches(); return;
-      }
-      if (a==='inv-delete') { const p=decodePayload(btn); state.data.inventory = state.data.inventory.filter(x=>x.id!==p?.id); saveState(); renderInventory(); updateColorMatches(); showToast('Removed','success'); return; }
-      if (a==='buylist-add') {
-        const brand=$('#buylist-paint-brand').value;
-        const name=String($('#buylist-paint-name').value||'').trim();
-        const type=$('#buylist-paint-type').value || PaintType.Other;
-        const hex=$('#buylist-paint-color').value || '#000000';
-        const qty=clamp(parseInt($('#buylist-paint-qty').value,10)||1,1,99);
-        if(!name) return showToast('Enter a paint name','error');
-        const r=addToBuySmart({brand, paint_name:name, hex, type, sku:null}, {reason:'Manual add', qtyAdd:qty});
-        if (r.ok) { $('#buylist-paint-name').value=''; renderBuylist(); showToast('Added to Buy List','success'); }
-        else showToast(r.skipped==='owned'?'Skipped (already owned)':'Could not add','info');
-        return;
-      }
-      if (a==='buy-qty') {
-        const p=decodePayload(btn); const rec=state.data.buylist.find(x=>x.id===p?.id);
-        if(!rec) return;
-        const next=(rec.quantity||1) + (p.delta||0);
-        if (next<=0) state.data.buylist = state.data.buylist.filter(x=>x.id!==rec.id);
-        else { rec.quantity=clamp(next,1,99); rec.updated_at=nowIso(); }
-        saveState(); renderBuylist(); return;
-      }
-      if (a==='buy-delete') { const p=decodePayload(btn); state.data.buylist = state.data.buylist.filter(x=>x.id!==p?.id); saveState(); renderBuylist(); showToast('Removed','success'); return; }
-      if (a==='buy-move-owned') {
-        const p=decodePayload(btn); const rec=state.data.buylist.find(x=>x.id===p?.id);
-        if(!rec) return;
-        addToInventory({brand:rec.brand, paint_name:rec.paint_name, hex:rec.hex, type:rec.type, sku:rec.sku||null}, rec.quantity||1);
-        state.data.buylist = state.data.buylist.filter(x=>x.id!==rec.id);
-        saveState(); renderBuylist(); renderInventory(); updateColorMatches(); showToast('Moved to Inventory','success'); return;
-      }
-      if (a==='buylist-clear') { state.data.buylist=[]; saveState(); renderBuylist(); showToast('Buy List cleared','success'); return; }
-    });
-    // Inputs
-    $('#search-paints').addEventListener('input', (e) => { state.ui.invSearch=String(e.target.value||''); saveState(); renderInventory(); });
-    $('#buylist-paint-color').addEventListener('input', (e) => { $('#buylist-color-preview').style.backgroundColor=e.target.value; });
-    // Upload zone
-    const uz=$('#upload-zone');
-    uz.addEventListener('dragover', (e)=>{ e.preventDefault(); uz.classList.add('border-purple-500'); });
-    uz.addEventListener('dragleave', ()=>uz.classList.remove('border-purple-500'));
-    uz.addEventListener('drop', (e)=>{ e.preventDefault(); uz.classList.remove('border-purple-500');
-      const f=e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) loadMatcherImageFromFile(f);
-    });
-    $('#image-upload').addEventListener('change', (e)=>{ const f=e.target.files?.[0]; if(f) loadMatcherImageFromFile(f); });
-    // Drag markers
-    document.addEventListener('mousedown', (e)=>{
-      const el=e.target.closest('.color-marker');
-      if (!el) return;
-      if (e.target.closest('[data-action="marker-delete"]')) return;
-      startDragMarker(el, e);
-    });
-    document.addEventListener('mousemove', (e)=>moveDrag(e));
-    document.addEventListener('mouseup', ()=>stopDrag());
-    window.addEventListener('resize', ()=>{ if(uploadedImage) drawImage(); });
-    // Boot
-    function boot() {
-      renderHeaderProject();
-      $('#buylist-color-preview').style.backgroundColor = $('#buylist-paint-color').value;
-      if (state.matcher.uploadedImageDataUrl) {
-        loadMatcherImageFromDataUrl(state.matcher.uploadedImageDataUrl, () => { renderMarkers(); updateColorMatches(); });
-      } else {
-        updateColorMatches();
-      }
-      switchView(state.ui.currentView || 'matcher');
-      renderInventory();
-      renderBuylist();
-    }
-    boot();
-  })();
-  </script>
-</body>
-</html>
+    showToast(added?`Added ${added} items to Buy List`:"Nothing new to add",added?"success":"info");
+    switchView("buylist"); return;
+  }
+  if(action==="add-inventory"){
+    const brand=$("new-paint-brand").value, name=($("new-paint-name").value||"").trim(),
+    type=$("new-paint-type").value, hex=$("new-paint-color").value,
+    qty=Math.max(1,Number($("new-paint-qty").value||1));
+    if(!name) return showToast("Enter a paint name","error");
+    const existing=state.inventory.find(p=>`${p.brand}||${p.paint_name}`.toLowerCase()===`${brand}||${name}`.t
+    oLowerCase());
+    if(existing){existing.owned=true; existing.hex=hex||existing.hex; existing.type=type||existing.type;
+    existing.quantity=(existing.quantity||1)+qty;}
+    else state.inventory.push({id:uid(),brand,paint_name:name,hex,type,owned:true,quantity:qty});
+    $("new-paint-name").value=""; saveState(); renderInventory(); refreshTestPicker(); renderMatches();
+    showToast("Inventory updated","success"); return;
+  }
+  if(action==="toggle-owned"){
+    const id=a.dataset.id; const p=state.inventory.find(x=>x.id===id); if(!p) return;
+    p.owned=!p.owned; saveState(); renderInventory(); renderMatches(); showToast("Updated","success"); return;
+  }
+  if(action==="inv-qty"){
+    const id=a.dataset.id, delta=Number(a.dataset.delta||0); const p=state.inventory.find(x=>x.id===id);
+    if(!p) return;
+    const q=(p.quantity||1)+delta;
+    if(q<=0) state.inventory=state.inventory.filter(x=>x.id!==id); else {p.quantity=q; p.owned=true;}
+    saveState(); renderInventory(); refreshTestPicker(); renderMatches(); return;
+  }
+  if(action==="inv-delete"){
+    state.inventory=state.inventory.filter(x=>x.id!==a.dataset.id); saveState(); renderInventory();
+    refreshTestPicker(); renderMatches(); showToast("Removed","success"); return;
+  }
+  if(action==="toggle-owned-only"){invOwnedOnly=!invOwnedOnly;
+  $("owned-toggle-icon").textContent=invOwnedOnly?"☑":"☐"; renderInventory(); return;}
+  if(action==="cart-qty"){
+    const it=state.buylist.find(x=>x.id===a.dataset.id); if(!it) return;
+    const q=(it.quantity||1)+Number(a.dataset.delta||0); if(q<=0)
+    state.buylist=state.buylist.filter(x=>x.id!==it.id); else it.quantity=q;
+    saveState(); renderBuylist(); return;
+  }
+  if(action==="cart-del"){state.buylist=state.buylist.filter(x=>x.id!==a.dataset.id); saveState();
+  renderBuylist(); showToast("Removed","success"); return;}
+  if(action==="cart-got"){moveCartItemToInventory(a.dataset.id); return;}
+  if(action==="clear-buylist"){state.buylist=[]; saveState(); renderBuylist(); showToast("Cart
+  cleared","success"); return;}
+  if(action==="new-project"){createProject(); return;}
+  if(action==="save-to-project"){saveToProject(); return;}
+  if(action==="project-load"){loadProject(a.dataset.id); return;}
+  if(action==="project-delete"){deleteProject(a.dataset.id); return;}
+  if(action==="export-plan"){exportPlan(); return;}
+  if(action==="test-upload"){$("test-image-upload").click(); return;}
+  if(action==="test-undo"){undoTest(); return;}
+  if(action==="test-clear"){clearTestPaint(); return;}
+}
+function onChange(e){
+  if(e.target.id==="image-upload"){const f=e.target.files&&e.target.files[0]; if(f) handleImageFile(f);
+  return;}
+  if(e.target.id==="search-paints"){invSearch=e.target.value||""; renderInventory(); return;}
+  if(e.target.id==="brand-lock"){state.settings.brandLock=e.target.value||""; saveState(); renderMatches();
+  showToast(state.settings.brandLock?`Brand lock: ${brandName(state.settings.brandLock)}`:"Brand lock
+  off","info"); return;}
+  if(e.target.id==="recipe-intensity"){state.settings.recipeIntensity=Number(e.target.value||18); saveState();
+  renderMatches(); return;}
+  if(e.target.id==="prefer-owned"){state.settings.preferOwned=!!e.target.checked; saveState();
+  renderMatches(); return;}
+  if(e.target.id==="allow-cross-brand-owned"){state.settings.allowCrossBrandOwned=!!e.target.checked;
+  saveState(); renderMatches(); return;}
+  if(e.target.id==="cart-skip-owned"){state.settings.cartSkipOwned=!!e.target.checked; saveState(); return;}
+  if(e.target.id==="test-image-upload"){const f=e.target.files&&e.target.files[0]; if(f) handleTestFile(f);
+  return;}
+  if(e.target.id==="test-paint-color"){$("test-paint-preview").style.backgroundColor=e.target.value; return;}
+  if(e.target.id==="test-inv-pick"){const p=state.inventory.find(x=>x.id===e.target.value); if(!p) return;
+  $("test-paint-color").value=p.hex; $("test-paint-preview").style.backgroundColor=p.hex; return;}
+}
+function onBrandPillClick(e){
+  const pill=e.target.closest(".brand-pill"); if(!pill) return;
+  invBrandFilter=pill.dataset.brand||"all";
+  document.querySelectorAll(".brand-pill").forEach(b=>{
+    const active=b.dataset.brand===invBrandFilter;
+    b.classList.toggle("bg-indigo-600",active); b.classList.toggle("text-white",active);
+    b.classList.toggle("bg-gray-100",!active); b.classList.toggle("text-gray-700",!active);
+  });
+  renderInventory();
+}
+function init(){
+  $("brand-lock").value=state.settings.brandLock||"";
+  $("recipe-intensity").value=String(state.settings.recipeIntensity||18);
+  $("prefer-owned").checked=!!state.settings.preferOwned;
+  $("allow-cross-brand-owned").checked=!!state.settings.allowCrossBrandOwned;
+  $("cart-skip-owned").checked=!!state.settings.cartSkipOwned;
+  document.addEventListener("click",onClick);
+  document.addEventListener("change",onChange);
+  document.addEventListener("click",onBrandPillClick);
+  setupDragDrop(); setupTestPaint();
+  window.addEventListener("resize",()=>{if(uploadedImage) drawMatcherImage(); if(testImage)
+  drawTestImage();});
+  renderInventory(); renderBuylist(); renderProjects(); renderMatches(); refreshTestPicker();
+}
+document.addEventListener("DOMContentLoaded",init);
+</script>
+</body></html>
